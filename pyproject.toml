@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "flash-tokenizer"
-version = "0.7.0"
+version = "0.7.1"
 description = "FlashBertTokenizer implementation with C++ backend"
 readme = "README.md"
 requires-python = ">=3.7"
@@ -25,8 +25,11 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/springkim/flash-tokenizer"
-Issues = "https://github.com/springkim/flash-tokenizer/issues"
+Homepage = "https://github.com/NLPOptimize/flash-tokenizer"
+Issues = "https://github.com/NLPOptimize/flash-tokenizer/issues"
 
 [tool.scikit-build]
 wheel.expand-macos-universal-tags = true
+
+[tool.setuptools.exclude-package-data]
+"*" = ["*.pyc", "*.pyo", "*.so", "*.pyd", "__pycache__"]
