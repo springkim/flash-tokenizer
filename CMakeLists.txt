@@ -1,18 +1,18 @@
 cmake_minimum_required(VERSION 3.15)
 
-set(PROJECT_VERSION_STR 0.7.1)
+set(PROJECT_VERSION_STR 0.8.0)
 
 project(flash_tokenizer VERSION ${PROJECT_VERSION_STR})
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-option(BUILD_EXECUTABLE "Build the executable" OFF)
+option(BUILD_EXECUTABLE "Build the executable" ON)
 option(BUILD_PYTHON_MODULE "Build the Python module" ON)
 
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64")
-    add_definitions(-DSSE2NEON_SUPPRESS_WARNINGS)
-    message(STATUS "ARM64 architecture detected: SSE2NEON_SUPPRESS_WARNINGS macro defined")
-endif()
+
+#set(Python3_EXECUTABLE "/opt/miniconda3/bin/python")
+#set(Python_EXECUTABLE "/opt/miniconda3/bin/python")
+
 
 if (BUILD_PYTHON_MODULE)
     find_package(Python COMPONENTS Interpreter Development.Module REQUIRED)
@@ -36,4 +36,9 @@ if (BUILD_EXECUTABLE)
 
     add_executable(flash_tokenizer main.cpp src/bert_tokenizer.cpp)
     target_include_directories(flash_tokenizer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        target_compile_options(flash_tokenizer PRIVATE -O3)
+    elseif (MSVC)
+        target_compile_options(flash_tokenizer PRIVATE /O2)  # MSVC에서는 /O2가 가장 높은 최적화
+    endif ()
 endif ()

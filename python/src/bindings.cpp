@@ -25,7 +25,7 @@ py::class_<FlashBertTokenizer>(m, "FlashBertTokenizer")
         py::arg("vocab_file"),
         py::arg("do_lower_case") = true,
 py::arg("max_input_chars_per_word") = 256)
-.def("tokenize", [](FlashBertTokenizer &self, py::str text, int max_length) -> std::vector<std::string> {
+.def("tokenize", [](FlashBertTokenizer &self, py::str text, int max_length) -> std::list<std::string> {
 std::string text_str = py::str(text).cast<std::string>();
 return self.tokenize(text_str, max_length);
 }, py::arg("text"), py::arg("max_length") = -1)
