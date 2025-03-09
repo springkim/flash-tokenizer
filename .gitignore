@@ -30,3 +30,10 @@
 *.exe
 *.out
 *.app
+.idea/
+res/
+cmake-build*/
+.DS_Store
+dist/
+build/
+src/flash_tokenizer.egg-info/
