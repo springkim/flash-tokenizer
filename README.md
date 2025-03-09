@@ -78,9 +78,9 @@ Most developers will either use `transformers.BertTokenizer` or `transformers.Au
 
 Naturally, it's faster than BertTokenizer, but the results aren't exactly the same, which means you're already giving up 100% accuracy starting with the tokenizer.
 
-BertTokenizer is not only provided by transformers. [PaddleNLP (https://github.com/PaddlePaddle/PaddleNLP) and tensorflow-text (https://www.tensorflow.org/text) also provide BertTokenizer.
+BertTokenizer is not only provided by transformers. [PaddleNLP](https://github.com/PaddlePaddle/PaddleNLP) and [tensorflow-text](https://www.tensorflow.org/text) also provide BertTokenizer.
 
-Then there's [Blingfire] (https://github.com/microsoft/BlingFire), which is developed by Microsoft and is being abandoned.
+Then there's [Blingfire](https://github.com/microsoft/BlingFire), which is developed by Microsoft and is being abandoned.
 
 PaddleNLP requires PaddlePaddle and provides tokenizer functionality starting with version 3.0rc. You can install it as follows
 
@@ -155,7 +155,7 @@ For both `single text` and `batch text`, PaddleNLP's implementation is always fa
 
 Now you may have to make a decision between `speed (blingfire) vs `balance (PaddleNLP).
 
-BertTokenizer requires a fast [single-core CPU] (https://www.cpubenchmark.net/singleThread.html) to get fast results.
+BertTokenizer requires a fast [single-core CPU](https://www.cpubenchmark.net/singleThread.html) to get fast results.
 
 The `flash-tokenizer`, which I implemented because I didn't like the other tokenizers, has a clear advantage in both speed and accuracy.
 
