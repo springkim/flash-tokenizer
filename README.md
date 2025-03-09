@@ -21,7 +21,7 @@ FlashTokenizer is a high-performance tokenizer implementation in C++ of the Bert
 <img align="left" src="https://img.shields.io/badge/success-0B86F1?style=flat&logo=python&logoColor=white&label=MacOS_build">
 <img align="left" src="https://img.shields.io/badge/success-0B86F1?style=flat&logo=python&logoColor=white&label=Windows_build">
 <img align="left" src="https://img.shields.io/badge/success-0B86F1?style=flat&logo=python&logoColor=white&label=Linux_build">
-</p>
+</p><br>
 
 * * *
 
@@ -109,7 +109,7 @@ The implementations we'll look at in detail are `PaddleNLP's BertTokenizerFast` 
   * **Advantages**: **5-10x faster than other implementations**.
   * **Disadvantages**: Long training time (8 hours) and lower accuracy than other implementations. (+Difficult to get help due to de facto development hiatus).
 * `PaddleNLP`: As shown in the experiments below, PaddleNLP is always faster than BertTokenizerFast (HF) to the same number of decimal places, and is always faster on any OS, whether X86 or Arm.
-  * **Advantages**: * **Internal implementation is in C++** Compared to `transformers.BertTokenizerFast` implemented in Rust, it is 1.2x faster while outputting exactly the same values.
+  * **Advantages**:  **Internal implementation is in C++** Compared to `transformers.BertTokenizerFast` implemented in Rust, it is 1.2x faster while outputting exactly the same values.
     * You can't specify `pt(pytorch tensor)` in `return_tensors`, but this is not a problem.[^1]
   * **Disadvantages**: none, other than the need to install PaddlePaddle and PaddleNLP.
 
@@ -191,7 +191,7 @@ erDiagram
 
 ## Acknowledgement
 
-FlashInfer is inspired by [FlashAttention](https://github.com/Dao-AILab/flash-attention), [FlashInfer](https://github.com/flashinfer-ai/flashinfer), [FastBertTokenizer](https://github.com/georg-jung/FastBertTokenizer) and [tokenizers-cpp](https://github.com/mlc-ai/tokenizers-cpp) projects.
+FlashTokenizer is inspired by [FlashAttention](https://github.com/Dao-AILab/flash-attention), [FlashInfer](https://github.com/flashinfer-ai/flashinfer), [FastBertTokenizer](https://github.com/georg-jung/FastBertTokenizer) and [tokenizers-cpp](https://github.com/mlc-ai/tokenizers-cpp) projects.
 
 
 ## References
