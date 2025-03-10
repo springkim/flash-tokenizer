@@ -5,32 +5,34 @@
 #include <string>
 #include <algorithm>
 #include <cstdlib>
-#include "bert_tokenizer.h"
-#include <set>
-#include <thread>
-#include <algorithm>
 #include <numeric>
+#include <chrono>
+
+
+#include "bert_tokenizer.h"
+#include "env.h"
+
+//#define DEEPCT
+#define  KCBERT_BASE
+
+#ifdef KCBERT_BASE
+#define TEXTS_PATH "../dataset/kcbert_base/text_10M.txt"
+#define IDS_PATH "../dataset/kcbert_base/text_10M_gt.txt"
+#define VOCAB_PATH "../dataset/kcbert_base/vocab_kcbert_base.txt"
+#define MAX_LENGTH 300
+#define DO_LOWER false
+#endif
+
+#ifdef DEEPCT
+#define TEXTS_PATH "../dataset/deepct/titles_404464.txt"
+#define IDS_PATH "../dataset/deepct/gt_404464.txt"
+#define VOCAB_PATH "../dataset/deepct/vocab_char_16424.txt"
+#define MAX_LENGTH 256
+#define DO_LOWER true
+#endif
+
+
 using namespace std;
-
-void check_platform() {
-
-#if defined(_WIN32) || defined(_WIN64)
-    const char* os = "windows";
-#elif defined(__linux__)
-    const char* os = "linux";
-#elif defined(__APPLE__)
-    const char *os = "osx";
-#endif
-#if defined(_MSC_VER)
-    const char* compiler = "msvc";
-#elif defined(__clang__)
-    const char* compiler = "clang";
-#elif defined(__GNUC__)
-    const char *compiler = "gcc";
-
-#endif
-    std::cout << os << "(" << compiler << ")" << std::endl;
-}
 
 std::vector<int> parseNumbersFromString(const std::string &input) {
     std::vector<int> numbers;
@@ -46,11 +48,13 @@ std::vector<int> parseNumbersFromString(const std::string &input) {
     return numbers;
 }
 
-std::vector<std::string> load_titles() {
-    std::fstream fin("../res/titles_404464.txt", std::ios::in);
+vector<string> load_titles() {
+    std::fstream fin(TEXTS_PATH, std::ios::in);
     std::vector<std::string> lines;
     std::string line;
-    while (std::getline(fin, line)) {
+    while (getline(fin, line)) {
+        if (!line.empty() && (line.back() == '\n' || line.back() == '\r'))
+            line.pop_back();
         lines.push_back(line);
     }
     fin.close();
@@ -59,7 +63,7 @@ std::vector<std::string> load_titles() {
 }
 
 vector<vector<int>> load_gt() {
-    std::fstream fin("../res/gt_404464.txt", std::ios::in);
+    std::fstream fin(IDS_PATH, std::ios::in);
     std::vector<std::vector<int>> gts;
     std::string gt;
     while (std::getline(fin, gt)) {
@@ -71,59 +75,36 @@ vector<vector<int>> load_gt() {
 }
 
 void test() {
-
-
-
-    auto lines = load_titles();
+    auto texts = load_titles();
     auto gts = load_gt();
 
-    vector<double> elapsed_times;
-    for (int loop = 0; loop < 3; loop++) {
-        FlashBertTokenizer tokenizer("../res/vocab_char_16424.txt", true);
-        std::chrono::system_clock::time_point t_beg, t_end;
-        std::chrono::duration<double> diff{};
+    FlashBertTokenizer tokenizer(VOCAB_PATH, DO_LOWER, MAX_LENGTH);
+    std::chrono::system_clock::time_point t_beg, t_end;
+    std::chrono::duration<double> diff{};
 
-        t_beg = std::chrono::system_clock::now();
+    t_beg = std::chrono::system_clock::now();
 
-        int correct = 0;
-        long long int total = 0;
-        for (int i = 0; i < lines.size(); i++) {
-            auto ids = tokenizer(lines[i]);
-            if (ids == gts[i]) {
-                correct += 1;
-            }
-            total += ids.size();
-        }
-        t_end = std::chrono::system_clock::now();
-        diff = t_end - t_beg;
-        auto elapsed_time = diff.count();
-        elapsed_times.push_back(elapsed_time);
-        std::cout << elapsed_time << " seconds" << "\t";
-
-        //std::cout << lines.size() << "\t";
-        std::cout << static_cast<double>(correct) * 100.0 / lines.size() << " % Accuracy" << std::endl;
-        std::cout << static_cast<double>(lines.size()) / elapsed_time << " RPS" << std::endl;
-        std::cout << "--------------" << std::endl;
+    int correct = 0;
+    for (int i = 0; i < texts.size(); i++) {
+        auto ids = tokenizer(texts[i], "longest", MAX_LENGTH);
+        correct += ids == gts[i];
     }
+    t_end = std::chrono::system_clock::now();
+    diff = t_end - t_beg;
+    auto elapsed_time = diff.count();
+    std::cout << elapsed_time << " seconds" << "\t";
 
-    double total = std::accumulate(elapsed_times.begin(),elapsed_times.end(),0.0) / 3;
+    std::cout << texts.size() << "\t";
+    std::cout << static_cast<double>(correct) * 100.0 / texts.size() << " % Accuracy" << std::endl;
+    std::cout << static_cast<double>(texts.size()) / elapsed_time << " RPS" << std::endl;
+    std::cout << "--------------" << std::endl;
 
-    std::cout << "Final: " << total << std::endl;
 }
 
 int main() {
     std::ios::sync_with_stdio(false);
-    check_platform();
+    cout << cpp_env() << endl;
 
-    test(), exit(0);
-
-//    FlashBertTokenizer tokenizer("../config/vocab.txt", true);
-//
-//    const std::string text = "이렇게 하지만 과학자 연구 결과 스피노 사우루스 4 4족 보행 밝였습니다 이렇게 잘 보셨나 ㅎㅎ 스피노 사우루스 이제 4 4족 보행인 것 ㅎㅎ 아직 증거 부족";
-//    std::vector<int> ids = tokenizer(text);
-//    for (auto &e: ids) {
-//        std::cout << e << ", ";
-//    }
-//    std::cout << std::endl;
+    test();
     return 0;
 }

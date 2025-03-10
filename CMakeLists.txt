@@ -1,13 +1,25 @@
 cmake_minimum_required(VERSION 3.15)
 
-set(PROJECT_VERSION_STR 0.8.0)
+set(PROJECT_VERSION_STR 0.9.1)
 
 project(flash_tokenizer VERSION ${PROJECT_VERSION_STR})
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+
+if (WIN32)
+    set(Python3_EXECUTABLE "C:/Users/spring/AppData/Local/Programs/Python/Python312/python.exe")
+    set(Python_EXECUTABLE "C:/Users/spring/AppData/Local/Programs/Python/Python312/python.exe")
+elseif (UNIX AND NOT APPLE)
+    set(Python3_EXECUTABLE "/opt/miniconda3/bin/python")
+    set(Python_EXECUTABLE "/opt/miniconda3/bin/python")
+elseif (APPLE)
+    set(Python3_EXECUTABLE "/opt/miniconda3/bin/python")
+    set(Python_EXECUTABLE "/opt/miniconda3/bin/python")
+endif ()
+
 option(BUILD_EXECUTABLE "Build the executable" ON)
-option(BUILD_PYTHON_MODULE "Build the Python module" OFF)
+option(BUILD_PYTHON_MODULE "Build the Python module" ON)
 
 
 if (BUILD_PYTHON_MODULE)
@@ -19,7 +31,7 @@ if (BUILD_PYTHON_MODULE)
             OUTPUT_STRIP_TRAILING_WHITESPACE
     )
     list(APPEND CMAKE_PREFIX_PATH "${_pybind11_cmake_dir}")
-    find_package(pybind11 CONFIG REQUIRED)
+    find_package(pybind11 REQUIRED)
 
 
     add_library(bert_tokenizer STATIC

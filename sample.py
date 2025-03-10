@@ -14,14 +14,14 @@ titles = ['이렇게 하지만 과학자 연구 결과 스피노 사우루스 4 
           '2 2년 만 만에 재현 재현된 푸우 인형 비 日 하뉴 男 첫 그랜드 슬램 종합',
           '안산 맛집 투 파인드 피터 고잔점 네이버 블로그']
 
-vocab_file = "./config/vocab.txt"
+vocab_file = "dataset/kcbert_base/text_1M.txt"
 
-tokenizer1 = FlashBertTokenizer(vocab_file, do_lower_case=True, max_input_chars_per_word=256)
-tokenizer2 = BertTokenizerFast(vocab_file, do_lower_case=True, strip_accents=False, clean_up_tokenization_spaces=True)
+tokenizer1 = FlashBertTokenizer(vocab_file, do_lower_case=False, max_input_chars_per_word=300)
+tokenizer2 = BertTokenizerFast(vocab_file, do_lower_case=False, strip_accents=False, clean_up_tokenization_spaces=True)
 
 for title in titles:
-    ids1 = tokenizer1(title.encode().decode(), "longest", 256, "np", True)
-    ids2 = tokenizer2(title, max_length=256, padding="longest", truncation=True).input_ids
+    ids1 = tokenizer1(title.encode().decode(), "longest", 300, "np", True)
+    ids2 = tokenizer2(title, max_length=300, padding="longest", truncation=True).input_ids
     print(title)
     print(ids1)
     print(ids2)

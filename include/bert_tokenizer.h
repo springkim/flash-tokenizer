@@ -195,35 +195,6 @@ static std::string clean_text(const std::string &text, const std::vector<char> &
 }
 
 
-inline char to_lower_ascii(char c) {
-    return (c >= 'A' && c <= 'Z') ? c + 32 : c;
-}
-
-static std::string to_lower(const std::string &text) {
-    size_t n = text.size();
-    std::string res(n, '\0');
-    const char *p = text.data();
-    const char *end = p + n;
-    char *out = &res[0];
-    while (p < end) {
-        auto c = static_cast<unsigned char>(*p);
-        if (c < 0x80) {
-            *out++ = to_lower_ascii(*p++);
-        } else {
-            int seq_len = (c >> 5) == 0x6 ? 2 : (c >> 4) == 0xE ? 3 : (c >> 3) == 0x1E ? 4 : 1;
-            if (p + seq_len > end) break;
-            if (seq_len >= 1 && seq_len <= 4) {
-                std::copy(p, p + seq_len, out);
-            } else {
-                out[0] = p[0];
-            }
-            p += seq_len;
-            out += seq_len;
-        }
-    }
-    return res;
-}
-
 static STRING_LIST split_on_punc(const std::string &text) {
     STRING_LIST tokens;
     std::string buffer;
@@ -418,14 +389,14 @@ public:
         std::string tokenized = tokenize_chinese_chars(cleaned);
         STRING_LIST orig_tokens = whitespace_tokenize(tokenized, this->isSpace);
 
-        if (!this->do_lower_case) {
+        if (this->do_lower_case) {
             for (const auto &token: orig_tokens) {
                 auto sub_tokens = to_lower_split_on_punc(token);
                 CONCAT(output, sub_tokens);
             }
         } else {
             for (const auto &token: orig_tokens) {
-                auto sub_tokens = split_on_punc(to_lower(token));
+                auto sub_tokens = split_on_punc(token);
                 CONCAT(output, sub_tokens);
             }
         }
