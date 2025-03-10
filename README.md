@@ -40,14 +40,14 @@ FlashTokenizer is a high-performance tokenizer implementation in C++ of the Bert
 
 > [!TIP]
 > 
-  * Implemented in C++17 and is fastest when built with GNUC.
-     * MacOS: `g++(14.2.0)` is faster than `clang++(16.0.0)`.
-     * Windows: `g++(8.1.0)-MinGW64` is faster than `Visual Studio 2019`.
-     * Ubuntu: `g++(11.4.0)` is faster than `clang++(14.0.0)`. 
-
- * Equally fast in Python via pybind11.
- * Blingfire was difficult to use in practice due to its low accuracy, but FlashBertTokenizer has both high accuracy and high speed.
- * Although it's only implemented as a single thread, it's capable of 40K RPS in C++ and 25K RPS in Python, and it's thread-safe, so you can go even faster with multi-threading if you need to.
+>  * Implemented in C++17 and is fastest when built with GNUC.
+>     * MacOS: `g++(14.2.0)` is faster than `clang++(16.0.0)`.
+>     * Windows: `g++(8.1.0)-MinGW64` is faster than `Visual Studio 2019`.
+>     * Ubuntu: `g++(11.4.0)` is faster than `clang++(14.0.0)`. 
+>
+> * Equally fast in Python via pybind11.
+> * Blingfire was difficult to use in practice due to its low accuracy, but FlashBertTokenizer has both high accuracy and high speed.
+> * Although it's only implemented as a single thread, it's capable of 40K RPS in C++ and 25K RPS in Python, and it's thread-safe, so you can go even faster with multi-threading if you need to.
 
 
 ## News
