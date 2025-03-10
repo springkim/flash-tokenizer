@@ -56,10 +56,9 @@
 #include <list>
 #include <functional>
 #include <thread>
-#include <memory_resource>
 #include "robin_hood.h"
 
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(_WIN64)
 #define SELECT_ANY  __declspec(selectany)
 #elif defined(__linux__)
 #define SELECT_ANY  __attribute__((weak))
@@ -124,17 +123,8 @@ convert_by_vocab(const Vocab &vocab, const STRING_LIST &items, int max_length = 
 }
 
 
-OPTIMIZED static STRING_LIST whitespace_tokenize(const std::string &text) {
-    static const std::array<bool, 256> isSpace = []() {
-        std::array<bool, 256> table{};
-        table[' '] = true;
-        table['\t'] = true;
-        table['\n'] = true;
-        table['\v'] = true;
-        table['\f'] = true;
-        table['\r'] = true;
-        return table;
-    }();
+OPTIMIZED static STRING_LIST whitespace_tokenize(const std::string &text, const std::vector<bool> &isSpace) {
+
     STRING_LIST tokens;
     const char *data = text.data();
     const char *end = data + text.size();
@@ -154,22 +144,9 @@ OPTIMIZED static STRING_LIST whitespace_tokenize(const std::string &text) {
 }
 
 
-static inline std::string clean_text(const std::string &text) {
+static std::string clean_text(const std::string &text, const std::vector<char> &char_map) {
     if (text.empty()) return {};
 
-    static const std::array<char, 256> char_map = []() {
-        std::array<char, 256> map{};
-        for (int i = 0; i < 256; ++i) {
-            if (i == 0) {
-                map[i] = 0;
-            } else if (i < 128) {
-                map[i] = std::isspace(i) ? ' ' : i;
-            } else {
-                map[i] = i;
-            }
-        }
-        return map;
-    }();
 
     std::string result;
     result.reserve(text.size());
@@ -407,17 +384,35 @@ OPTIMIZED static std::string tokenize_chinese_chars(const std::string &text) {
 class BasicTokenizer {
 public:
     const bool do_lower_case;
+    std::vector<char> char_map;
+    std::vector<bool> isSpace;
 
     explicit BasicTokenizer(bool lower_case) : do_lower_case(lower_case) {
-
+        char_map.assign(256, 0);
+        for (int i = 0; i < 256; ++i) {
+            if (i == 0) {
+                char_map[i] = 0;
+            } else if (i < 128) {
+                char_map[i] = std::isspace(i) ? ' ' : i;
+            } else {
+                char_map[i] = i;
+            }
+        }
+        isSpace.assign(256, false);
+        isSpace[' '] = true;
+        isSpace['\t'] = true;
+        isSpace['\n'] = true;
+        isSpace['\v'] = true;
+        isSpace['\f'] = true;
+        isSpace['\r'] = true;
     }
 
 
     [[nodiscard]] STRING_LIST tokenize(const std::string &text) const {
         STRING_LIST output;
-        std::string cleaned = clean_text(text);
+        std::string cleaned = clean_text(text, this->char_map);
         std::string tokenized = tokenize_chinese_chars(cleaned);
-        STRING_LIST orig_tokens = whitespace_tokenize(tokenized);
+        STRING_LIST orig_tokens = whitespace_tokenize(tokenized, this->isSpace);
 
         if (!this->do_lower_case) {
             for (const auto &token: orig_tokens) {

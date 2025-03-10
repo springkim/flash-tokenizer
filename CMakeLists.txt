@@ -7,16 +7,20 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(BUILD_EXECUTABLE "Build the executable" ON)
-option(BUILD_PYTHON_MODULE "Build the Python module" ON)
-
-
-#set(Python3_EXECUTABLE "/opt/miniconda3/bin/python")
-#set(Python_EXECUTABLE "/opt/miniconda3/bin/python")
+option(BUILD_PYTHON_MODULE "Build the Python module" OFF)
 
 
 if (BUILD_PYTHON_MODULE)
     find_package(Python COMPONENTS Interpreter Development.Module REQUIRED)
+
+    execute_process(
+            COMMAND "${Python_EXECUTABLE}" -c "import pybind11; print(pybind11.get_cmake_dir())"
+            OUTPUT_VARIABLE _pybind11_cmake_dir
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    list(APPEND CMAKE_PREFIX_PATH "${_pybind11_cmake_dir}")
     find_package(pybind11 CONFIG REQUIRED)
+
 
     add_library(bert_tokenizer STATIC
             src/bert_tokenizer.cpp
@@ -28,7 +32,6 @@ if (BUILD_PYTHON_MODULE)
     target_link_libraries(_core PRIVATE bert_tokenizer)
     target_compile_definitions(_core PRIVATE VERSION_INFO=${PROJECT_VERSION})
 
-
     install(TARGETS _core DESTINATION flash_tokenizer)
 endif ()
 
@@ -39,6 +42,6 @@ if (BUILD_EXECUTABLE)
     if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         target_compile_options(flash_tokenizer PRIVATE -O3)
     elseif (MSVC)
-        target_compile_options(flash_tokenizer PRIVATE /O2)  # MSVC에서는 /O2가 가장 높은 최적화
+        target_compile_options(flash_tokenizer PRIVATE /O2)
     endif ()
 endif ()

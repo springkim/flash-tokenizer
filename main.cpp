@@ -11,6 +11,25 @@
 
 using namespace std;
 
+void check_platform(){
+
+#if defined(_WIN32) || defined(_WIN64)
+    const char* os = "windows";
+#elif defined(__linux__)
+    const char* os = "linux";
+#elif defined(__APPLE__)
+    const char* os = "osx";
+#endif
+#if defined(_MSC_VER)
+    const char* compiler = "msvc";
+#elif defined(__GNUC__)
+    const char* compiler = "gcc";
+#elif defined(__clang__)
+    const char* compiler = "clang";
+#endif
+    std::cout << os << "(" << compiler << ")" << std::endl;
+}
+
 std::vector<int> parseNumbersFromString(const std::string &input) {
     std::vector<int> numbers;
     std::stringstream ss(input);
@@ -75,11 +94,12 @@ void test() {
         t_end = std::chrono::system_clock::now();
         diff = t_end - t_beg;
         auto elapsed_time = diff.count();
-        std::cout << elapsed_time << " seconds" << std::endl;
+        std::cout << elapsed_time << " seconds" << "\t";
 
-        std::cout << lines.size() << std::endl;
+        std::cout << lines.size() << "\t";
         std::cout << static_cast<double>(correct) * 100.0 / lines.size() << " % Accuracy" << std::endl;
         std::cout << static_cast<double>(lines.size()) / elapsed_time << " RPS" << std::endl;
+        std::cout << "--------------" << std::endl;
     }
 
 
@@ -87,26 +107,17 @@ void test() {
 
 int main() {
     std::ios::sync_with_stdio(false);
-
-    std::forward_list<int> d;
-    for(int i=0;i<5;i++){
-        d.push_front(i);
-    }
-
-    for(auto&e:d){
-        cout << e << endl;
-    }
-    exit(1);
+    check_platform();
 
     test(), exit(0);
 
-    FlashBertTokenizer tokenizer("../config/vocab.txt", true);
-
-    const std::string text = "이렇게 하지만 과학자 연구 결과 스피노 사우루스 4 4족 보행 밝였습니다 이렇게 잘 보셨나 ㅎㅎ 스피노 사우루스 이제 4 4족 보행인 것 ㅎㅎ 아직 증거 부족";
-    std::vector<int> ids = tokenizer(text);
-    for (auto &e: ids) {
-        std::cout << e << ", ";
-    }
-    std::cout << std::endl;
+//    FlashBertTokenizer tokenizer("../config/vocab.txt", true);
+//
+//    const std::string text = "이렇게 하지만 과학자 연구 결과 스피노 사우루스 4 4족 보행 밝였습니다 이렇게 잘 보셨나 ㅎㅎ 스피노 사우루스 이제 4 4족 보행인 것 ㅎㅎ 아직 증거 부족";
+//    std::vector<int> ids = tokenizer(text);
+//    for (auto &e: ids) {
+//        std::cout << e << ", ";
+//    }
+//    std::cout << std::endl;
     return 0;
 }
