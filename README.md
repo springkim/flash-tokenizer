@@ -1,8 +1,8 @@
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./assets/FlashTokenizer_main_dark.png">
-    <img alt="FlashTokenizer" src="./assets/FlashTokenizer_main_light.png" width=60%>
+    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/NLPOptimize/flash-tokenizer/blob/main/assets/FlashTokenizer_main_dark.png?raw=true">
+    <img alt="FlashTokenizer" src="https://github.com/NLPOptimize/flash-tokenizer/blob/main/assets/FlashTokenizer_main_light.png?raw=true" width=60%>
   </picture>
 </p>
 <h1 align="center">
@@ -22,8 +22,8 @@ FlashTokenizer is a high-performance tokenizer implementation in C++ of the Bert
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./assets/Banner_dark.png">
-    <img alt="Banner" src="./assets/Banner_light.png" width=100%>
+    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/NLPOptimize/flash-tokenizer/blob/main/assets/Banner_dark.png?raw=true">
+    <img alt="Banner" src="https://github.com/NLPOptimize/flash-tokenizer/blob/main/assets/Banner_light.png?raw=true" width=100%>
   </picture>
 </p>
 
@@ -194,8 +194,8 @@ Both libraries are faster to return as `np.ndarray`. Perhaps the implementations
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./assets/BatchTest_dark.png">
-    <img alt="batchtest" src="./assets/BatchTest_light.png" width=100%>
+    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/NLPOptimize/flash-tokenizer/blob/main/assets/BatchTest_dark.png?raw=true">
+    <img alt="batchtest" src="https://github.com/NLPOptimize/flash-tokenizer/blob/main/assets/BatchTest_light.png?raw=true" width=100%>
   </picture>
 </p>
 
@@ -242,15 +242,15 @@ The `flash-tokenizer`, which I implemented because I didn't like the other token
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./assets/TokenizerPerformanceGraph_dark.png">
-    <img alt="FlashTokenizer" src="./assets/TokenizerPerformanceGraph_light.png" width=100%>
+    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/NLPOptimize/flash-tokenizer/blob/main/assets/TokenizerPerformanceGraph_dark.png?raw=true">
+    <img alt="FlashTokenizer" src="https://github.com/NLPOptimize/flash-tokenizer/blob/main/assets/TokenizerPerformanceGraph_light.png?raw=true" width=100%>
   </picture>
 </p>
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./assets/TokenizerPerformanceBar_dark.jpg">
-    <img alt="FlashTokenizer" src="./assets/TokenizerPerformanceBar_light.jpg" width=100%>
+    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/NLPOptimize/flash-tokenizer/blob/main/assets/TokenizerPerformanceBar_dark.jpg?raw=true">
+    <img alt="FlashTokenizer" src="https://github.com/NLPOptimize/flash-tokenizer/blob/main/assets/TokenizerPerformanceBar_light.jpg?raw=true" width=100%>
   </picture>
 </p>
 
@@ -269,8 +269,8 @@ erDiagram
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./assets/WrongAnswer_dark.png">
-    <img alt="WA" src="./assets/WrongAnswer_light.png" width=100%>
+    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/NLPOptimize/flash-tokenizer/blob/main/assets/WrongAnswer_dark.png?raw=true">
+    <img alt="WA" src="https://github.com/NLPOptimize/flash-tokenizer/blob/main/assets/WrongAnswer_light.png?raw=true" width=100%>
   </picture>
 </p>
 
