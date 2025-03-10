@@ -1,0 +1,6 @@
+build
+twine
+pybind11
+numpy
+setuptools
+wheel

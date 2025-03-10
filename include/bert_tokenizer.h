@@ -70,12 +70,16 @@
 
 #define LIST 1
 #define DEQUE 0
+#define VECTOR 0
 
 #if LIST == 1
 using STRING_LIST = std::list<std::string>;
 #define CONCAT(A, B) A.splice(A.end(),B)
 #elif DEQUE == 1
 using STRING_LIST = std::deque<std::string>;
+#define CONCAT(A, B) std::move(B.begin(),B.end(),std::back_inserter(A))
+#elif VECTOR == 1
+using STRING_LIST = std::vector<std::string>;
 #define CONCAT(A, B) std::move(B.begin(),B.end(),std::back_inserter(A))
 #endif
 

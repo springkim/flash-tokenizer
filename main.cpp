@@ -8,24 +8,26 @@
 #include "bert_tokenizer.h"
 #include <set>
 #include <thread>
-
+#include <algorithm>
+#include <numeric>
 using namespace std;
 
-void check_platform(){
+void check_platform() {
 
 #if defined(_WIN32) || defined(_WIN64)
     const char* os = "windows";
 #elif defined(__linux__)
     const char* os = "linux";
 #elif defined(__APPLE__)
-    const char* os = "osx";
+    const char *os = "osx";
 #endif
 #if defined(_MSC_VER)
     const char* compiler = "msvc";
-#elif defined(__GNUC__)
-    const char* compiler = "gcc";
 #elif defined(__clang__)
     const char* compiler = "clang";
+#elif defined(__GNUC__)
+    const char *compiler = "gcc";
+
 #endif
     std::cout << os << "(" << compiler << ")" << std::endl;
 }
@@ -69,14 +71,15 @@ vector<vector<int>> load_gt() {
 }
 
 void test() {
-    FlashBertTokenizer tokenizer("../res/vocab_char_16424.txt", true);
+
 
 
     auto lines = load_titles();
     auto gts = load_gt();
 
-
+    vector<double> elapsed_times;
     for (int loop = 0; loop < 3; loop++) {
+        FlashBertTokenizer tokenizer("../res/vocab_char_16424.txt", true);
         std::chrono::system_clock::time_point t_beg, t_end;
         std::chrono::duration<double> diff{};
 
@@ -94,15 +97,18 @@ void test() {
         t_end = std::chrono::system_clock::now();
         diff = t_end - t_beg;
         auto elapsed_time = diff.count();
+        elapsed_times.push_back(elapsed_time);
         std::cout << elapsed_time << " seconds" << "\t";
 
-        std::cout << lines.size() << "\t";
+        //std::cout << lines.size() << "\t";
         std::cout << static_cast<double>(correct) * 100.0 / lines.size() << " % Accuracy" << std::endl;
         std::cout << static_cast<double>(lines.size()) / elapsed_time << " RPS" << std::endl;
         std::cout << "--------------" << std::endl;
     }
 
+    double total = std::accumulate(elapsed_times.begin(),elapsed_times.end(),0.0) / 3;
 
+    std::cout << "Final: " << total << std::endl;
 }
 
 int main() {
