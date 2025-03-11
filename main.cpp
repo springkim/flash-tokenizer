@@ -92,9 +92,10 @@ deque<vector<int>> load_gt() {
 }
 
 void test() {
-
-    Timer::Tick("LoadDataset");
 #define LOAD_PARALLEL 1
+//#define MP 64
+    Timer::Tick("LoadDataset");
+
 #if LOAD_PARALLEL == 0
     auto texts = load_titles();
     auto gts = load_gt();
@@ -121,8 +122,6 @@ void test() {
 
     size_t correct = 0;
 
-
-//#define MP 64
 
 #ifndef MP
     for (size_t i = 0; i < texts.size(); i++) {
