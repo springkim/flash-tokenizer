@@ -57,6 +57,7 @@
 #include <functional>
 #include <thread>
 #include "robin_hood.h"
+#include "thread_pool.h"
 
 #if defined(_WIN32) || defined(_WIN64)
 #define SELECT_ANY  __declspec(selectany)
@@ -83,12 +84,33 @@ using STRING_LIST = std::vector<std::string>;
 #define CONCAT(A, B) std::move(B.begin(),B.end(),std::back_inserter(A))
 #endif
 
+#define LIST_IDS 0
+#define DEQUE_IDS 0
+#define VECTOR_IDS 1
+
+using INTEGER_TYPE = int;
+#if LIST_IDS == 1
+using INT_LIST = std::list<INTEGER_TYPE>;
+#define IDS_CONCAT(A, B) A.splice(A.end(),B)
+#define INIT(A, B) ((void)0)
+#define IDS_RETURN(A)   std::vector<int>((A).begin(),(A).end())
+#elif DEQUE_IDS == 1
+using INT_LIST = std::deque<INTEGER_TYPE>;
+#define IDS_CONCAT(A, B) std::move(B.begin(),B.end(),std::back_inserter(A))
+#define INIT(A,B) ((void)0)
+#define IDS_RETURN(A)   std::vector<int>((A).begin(),(A).end())
+#elif VECTOR_IDS == 1
+using INT_LIST = std::vector<INTEGER_TYPE>;
+#define IDS_CONCAT(A, B) std::move(B.begin(),B.end(),std::back_inserter(A))
+#define INIT(A, B) (A).reserve((B))
+#define IDS_RETURN(A)   (A)
+#endif
+
 
 OPTIMIZED class Vocab {
 public:
     std::vector<std::string> tokens;
     robin_hood::unordered_flat_map<std::string, int> token_to_index;
-
 
     explicit Vocab(const std::string &filename) {
         std::ifstream ifs(filename);
@@ -121,7 +143,8 @@ convert_by_vocab(const Vocab &vocab, const STRING_LIST &items, int max_length = 
 
     for (const auto &item: items) {
         auto it = token_to_index.find(item);
-        ids[index++] = (it != token_to_index.end() ? it->second : -1);
+        ids[index] = (it != token_to_index.end() ? it->second : -1);
+        index++;
     }
     return ids;
 }
@@ -408,17 +431,21 @@ class WordpieceTokenizer {
 public:
     const Vocab &vocab;
     const std::string UNK;
-    int max_input_chars_per_word;
+    int UNK_NUM;
 
     explicit WordpieceTokenizer(const Vocab &vocab_, std::string unk = "[UNK]", int max_chars = 256)
-            : vocab(vocab_), UNK(std::move(unk)), max_input_chars_per_word(max_chars) {
+            : vocab(vocab_), UNK(std::move(unk)) {
+
+        this->UNK_NUM = vocab.token_to_index.find(this->UNK)->second;
     }
 
-    OPTIMIZED [[nodiscard]] STRING_LIST tokenize(const std::string &token) const {
-        STRING_LIST output;
-        if (token.size() > static_cast<size_t>(max_input_chars_per_word))
-            return {this->UNK};
 
+    void tokenizer_ids(const std::string &token, int max_length, INT_LIST &input_ids) const {
+        if (token.size() > static_cast<size_t>(max_length)) {
+            input_ids.push_back(this->UNK_NUM);
+            return;
+        }
+        int original_size = input_ids.size();
         size_t start = 0;
         std::string candidate;
         while (start < token.size()) {
@@ -429,46 +456,185 @@ public:
                 if (start)
                     candidate.append("##");
                 candidate.append(token, start, len);
-                if (vocab.token_to_index.find(candidate) != vocab.token_to_index.end()) {
+                auto it = vocab.token_to_index.find(candidate);
+                if (it != vocab.token_to_index.end()) {
+                    found = true;
+                    input_ids.emplace_back(it->second);
+                    start += len;
+                    break;
+                }
+            }
+            if (!found) {
+                input_ids.resize(original_size);
+                input_ids.emplace_back(this->UNK_NUM);
+                return;
+            }
+        }
+    }
+
+    OPTIMIZED [[nodiscard]] STRING_LIST tokenize(const std::string &token, int max_length) const {
+        STRING_LIST output;
+        if (token.size() > static_cast<size_t>(max_length)) {
+            return {this->UNK};
+        }
+        size_t start = 0;
+        std::string candidate;
+        while (start < token.size()) {
+            bool found = false;
+
+            for (size_t len = token.size() - start; len > 0; --len) {
+                candidate.clear();
+                if (start)
+                    candidate.append("##");
+                candidate.append(token, start, len);
+                auto it = vocab.token_to_index.find(candidate);
+                if (it != vocab.token_to_index.end()) {
                     found = true;
                     output.emplace_back(candidate);
                     start += len;
                     break;
                 }
             }
-            if (!found)
+            if (!found) {
                 return {this->UNK};
+            }
         }
         return output;
     }
 
 };
 
+class WordpieceBackwardTokenizer {
+public:
+    const Vocab &vocab;
+    const std::string UNK;
+    int UNK_NUM;
+    int max_input_chars_per_word;
+
+    explicit WordpieceBackwardTokenizer(const Vocab &vocab_, std::string unk = "]KNU[", int max_chars = 200)
+            : vocab(vocab_), UNK(std::move(unk)), max_input_chars_per_word(max_chars) {
+
+        auto it = vocab.token_to_index.find(this->UNK);
+        this->UNK_NUM = (it != vocab.token_to_index.end()) ? it->second : 0;
+    }
+
+    void tokenizer_ids(const std::string &token, int max_length, INT_LIST &input_ids) {
+        std::string reversed_token = token;
+        std::reverse(reversed_token.begin(), reversed_token.end());
+
+        if (reversed_token.size() > static_cast<size_t>(max_length)) {
+            input_ids.push_back(this->UNK_NUM);
+            return;
+        }
+
+        int original_size = input_ids.size();
+        size_t start = 0;
+        std::string candidate;
+        INT_LIST temp_ids;
+
+        while (start < reversed_token.size()) {
+            bool found = false;
+
+            for (size_t len = reversed_token.size() - start; len > 0; --len) {
+                candidate.clear();
+                if (start > 0)
+                    candidate.append("##");
+                candidate.append(reversed_token, start, len);
+
+                auto it = vocab.token_to_index.find(candidate);
+                if (it != vocab.token_to_index.end()) {
+                    found = true;
+                    temp_ids.push_back(it->second);
+                    start += len;
+                    break;
+                }
+            }
+
+            if (!found) {
+                input_ids.resize(original_size);
+                input_ids.push_back(this->UNK_NUM);
+                return;
+            }
+        }
+        for (auto it = temp_ids.rbegin(); it != temp_ids.rend(); ++it) {
+            input_ids.push_back(*it);
+        }
+    }
+
+    OPTIMIZED [[nodiscard]] STRING_LIST tokenize(const std::string &token, int max_length) {
+        std::string reversed_token = token;
+        std::reverse(reversed_token.begin(), reversed_token.end());
+
+        if (reversed_token.size() > static_cast<size_t>(max_length)) {
+            return {this->UNK};
+        }
+
+        STRING_LIST temp_output;
+        size_t start = 0;
+        std::string candidate;
+
+        while (start < reversed_token.size()) {
+            bool found = false;
+
+            for (size_t len = reversed_token.size() - start; len > 0; --len) {
+                candidate.clear();
+                if (start)
+                    candidate.append("##");
+                candidate.append(reversed_token, start, len);
+
+                auto it = vocab.token_to_index.find(candidate);
+                if (it != vocab.token_to_index.end()) {
+                    found = true;
+                    temp_output.push_back(candidate);
+                    start += len;
+                    break;
+                }
+            }
+
+            if (!found) {
+                return {this->UNK};
+            }
+        }
+
+        STRING_LIST output;
+        for (auto it = temp_output.rbegin(); it != temp_output.rend(); ++it) {
+            std::string token = *it;
+            std::reverse(token.begin(), token.end());
+            output.push_back(token);
+        }
+
+        return output;
+    }
+};
+
 class FlashBertTokenizer {
+protected:
     const std::string UNK = "[UNK]";
     const std::string CLS = "[CLS]";
     const std::string SEP = "[SEP]";
+    int CLS_NUM;
+    int SEP_NUM;
+    ThreadPool pool;
 public:
-    Vocab vocab;
-    BasicTokenizer basic;
-    WordpieceTokenizer wordpiece;
-    int max_ids_length = 0;
+    const Vocab vocab;
+    const BasicTokenizer basic;
+    const WordpieceTokenizer wordpiece;
 
-    explicit FlashBertTokenizer(const std::string &vocab_file, bool do_lower_case = true,
-                                int max_input_chars_per_word = 256)
+    explicit FlashBertTokenizer(const std::string &vocab_file, bool do_lower_case = true)
             : vocab(vocab_file), basic(do_lower_case),
-              wordpiece(vocab, this->UNK, max_input_chars_per_word) {
-        this->max_ids_length = max_input_chars_per_word;
-
+              wordpiece(vocab, this->UNK) {
+        this->CLS_NUM = vocab.token_to_index.find(this->CLS)->second;
+        this->SEP_NUM = vocab.token_to_index.find(this->SEP)->second;
     }
 
-    STRING_LIST tokenize(const std::string &text, int max_length = -1) {
-        const int allowed_length = max_length == -1 ? this->max_ids_length - 1 : max_length - 1;
+protected:
+    STRING_LIST tokenize(const std::string &text, int max_length = 100) {
+        const size_t allowed_length = max_length - 1;
         STRING_LIST output;
         output.emplace_back(this->CLS);
         auto basic_tokens = basic.tokenize(text);
         for (const auto &token: basic_tokens) {
-            auto wp_tokens = wordpiece.tokenize(token);
+            auto wp_tokens = wordpiece.tokenize(token, max_length);
             CONCAT(output, wp_tokens);
             if (output.size() > allowed_length) {
                 output.resize(allowed_length);
@@ -480,6 +646,30 @@ public:
     }
 
 
+    virtual std::vector<int> tokenizer_ids(const std::string &text, int max_length, const std::string &padding) {
+        const size_t allowed_length = max_length - 1;
+        INT_LIST input_ids;
+        INIT(input_ids, static_cast<int>(max_length * 1.2));
+
+        input_ids.emplace_back(this->CLS_NUM);
+        auto basic_tokens = basic.tokenize(text);
+        for (const auto &token: basic_tokens) {
+            wordpiece.tokenizer_ids(token, max_length, input_ids);
+
+
+            if (input_ids.size() > allowed_length) {
+                input_ids.resize(allowed_length);
+                break;
+            }
+        }
+        input_ids.emplace_back(this->SEP_NUM);
+        if (padding == "max_length") {
+            input_ids.resize(max_length, 0);
+        }
+        return IDS_RETURN(input_ids);
+    }
+
+public:
     [[nodiscard]] std::vector<int>
     convert_tokens_to_ids(const STRING_LIST &tokens, int max_length = -1) const {
         return convert_by_vocab(vocab, tokens, max_length);
@@ -490,16 +680,84 @@ public:
         tokens.reserve(ids.size());
         for (int id: ids) {
             tokens.push_back(
-                    (id >= 0 && id < static_cast<int>(vocab.tokens.size())) ? vocab.tokens[id] : this->UNK);
+                    (id >= 0 && id < static_cast<int>(this->vocab.tokens.size())) ? this->vocab.tokens[id] : this->UNK);
         }
         return tokens;
     }
 
-    std::vector<int> operator()(const std::string &text, const std::string &padding = "longest", int max_length = -1,
-                                const std::string &return_tensors = "np", bool truncation = true) {
-        auto tokens = this->tokenize(text, max_length);
-        auto ids = this->convert_tokens_to_ids(tokens, padding == "max_length" ? this->max_ids_length : -1);
-        return ids;
+    virtual std::vector<int> operator()(const std::string &text, const std::string &padding = "longest", int max_length = 100) {
+        return this->tokenizer_ids(text, max_length, padding);
+    }
+
+    virtual std::vector<std::vector<int>> operator()(const std::vector<std::string> &texts,
+                                                     const std::string &padding = "longest",
+                                                     int max_length = 100) {
+        std::vector<std::future<std::vector<int>>> futures;
+        futures.reserve(texts.size());
+        for (const auto &text: texts)
+            futures.push_back(pool.enqueue([this, &text, max_length, &padding] {
+                return tokenizer_ids(text, max_length, padding);
+            }));
+        std::vector<std::vector<int>> input_ids;
+        for (auto &f: futures)
+            input_ids.push_back(f.get());
+        return input_ids;
+    }
+};
+
+class FlashBertTokenizerBidirectional : public FlashBertTokenizer {
+public:
+    WordpieceBackwardTokenizer wordpiece_backward;
+
+    explicit FlashBertTokenizerBidirectional(const std::string &vocab_file, bool do_lower_case = true) :
+            FlashBertTokenizer(vocab_file, do_lower_case), wordpiece_backward(vocab, this->UNK) {
+
+    }
+
+protected:
+    std::vector<int> tokenizer_ids(const std::string &text, int max_length, const std::string &padding) override {
+        const size_t allowed_length = max_length - 1;
+        INT_LIST input_ids;
+        INIT(input_ids, static_cast<int>(max_length * 1.2));
+
+        input_ids.emplace_back(this->CLS_NUM);
+        auto basic_tokens = basic.tokenize(text);
+        for (const auto &token: basic_tokens) {
+            INT_LIST i0, i1;
+            wordpiece.tokenizer_ids(token, max_length, i0);
+            wordpiece_backward.tokenizer_ids(token, max_length, i1);
+
+            INT_LIST filtered_i0;
+            std::copy_if(i0.begin(), i0.end(), std::back_inserter(filtered_i0),
+                         [](int i) { return i > 4; });
+            INT_LIST filtered_i1;
+            std::copy_if(i1.begin(), i1.end(), std::back_inserter(filtered_i1),
+                         [](int i) { return i > 4; });
+
+            std::sort(filtered_i0.begin(), filtered_i0.end());
+            std::sort(filtered_i1.begin(), filtered_i1.end());
+
+            if (filtered_i0 < filtered_i1) {
+                IDS_CONCAT(input_ids, i0);
+            } else {
+                IDS_CONCAT(input_ids, i1);
+            }
+            if (input_ids.size() > allowed_length) {
+                input_ids.resize(allowed_length);
+                break;
+            }
+        }
+        input_ids.emplace_back(this->SEP_NUM);
+        if (padding == "max_length") {
+            input_ids.resize(max_length, 0);
+        }
+        return IDS_RETURN(input_ids);
+    }
+
+public:
+    std::vector<int> operator()(const std::string &text, const std::string &padding = "longest", int max_length = -1) override {
+
+        return this->tokenizer_ids(text, max_length, padding);
     }
 };
 

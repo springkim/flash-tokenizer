@@ -22,7 +22,12 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
+dependencies = [
+    "numpy==1.26.4",
+]
+
 
 [project.urls]
 Homepage = "https://github.com/NLPOptimize/flash-tokenizer"
@@ -33,5 +38,4 @@ wheel.expand-macos-universal-tags = true
 
 [tool.setuptools.exclude-package-data]
 "*" = ["*.pyc", "*.pyo", "*.so", "*.pyd", "__pycache__"]
-
 

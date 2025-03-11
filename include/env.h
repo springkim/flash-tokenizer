@@ -82,6 +82,24 @@ std::string cpp_env() {
 #else
     oss << "(Release)";
 #endif
+
+    std::stringstream cpp_version;
+#if __cplusplus > 202302L
+    cpp_version<< "C++26";
+#elif __cplusplus > 202002L
+    cpp_version << "C++23";
+#elif __cplusplus > 201703L
+    cpp_version << "C++20";
+#elif __cplusplus > 201402L
+    cpp_version << "C++17";
+#elif __cplusplus > 201103L
+    cpp_version << "C++14";
+#elif __cplusplus > 199711L
+        cpp_version << "C++11";
+#else
+        cpp_version << "C++98/03";
+#endif
+    oss << " - " << cpp_version.str();
     return oss.str();
 }
 
