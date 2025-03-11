@@ -10,11 +10,7 @@
 #include <string>
 #include <thread>
 #include <future>
-#include <indicators/cursor_control.hpp>
-#include <indicators/progress_bar.hpp>
 #include "timer.h"
-
-using namespace indicators;
 
 #include "bert_tokenizer.h"
 #include "env.h"
@@ -125,36 +121,14 @@ void test() {
 
     size_t correct = 0;
 
-    using namespace indicators;
-    show_console_cursor(false);
-    ProgressBar bar{
-            option::BarWidth{50},
-            option::Start{"["},
-            option::Fill{"="},
-            option::Lead{">"},
-            option::Remainder{" "},
-            option::End{"]"},
-            option::PostfixText{"Tokenizing"},
-            option::ForegroundColor{Color::green},
-            option::FontStyles{std::vector<FontStyle>{FontStyle::bold}}
-    };
+
 //#define MP 64
 
 #ifndef MP
-    deque<size_t> tick100;
-    for (size_t i = 1; i <= 100; i++) {
-        tick100.push_back(static_cast<size_t>(texts.size() / 100.0 * i));
-    }
     for (size_t i = 0; i < texts.size(); i++) {
         auto ids = tokenizer(texts[i], "longest", MAX_LENGTH);
         correct += ids == gts[i];
-        if (i == tick100.front()) {
-            bar.tick();
-            tick100.pop_front();
-        }
     }
-    show_console_cursor(true);
-    bar.mark_as_completed();
 #else
     cout << "BatchedEncoding(Multi Processing)" << endl;
     vector<vector<string>> titles;
@@ -175,10 +149,7 @@ void test() {
     titles.push_back(chunk);
 
     size_t total = 0;
-    deque<size_t> tick100;
-    for (size_t i = 1; i <= 100; i++) {
-        tick100.push_back(static_cast<size_t>(titles.size() / 100.0 * i));
-    }
+
     for (size_t i = 0; i < titles.size(); i++) {
         auto ids = tokenizer(titles[i], "longest", MAX_LENGTH);
         for (size_t j = 0; j < ids.size(); j++) {
@@ -186,14 +157,7 @@ void test() {
                 correct += 1;
             }
         }
-        total += titles[i].size();
-        if (i == tick100.front()) {
-            bar.tick();
-            tick100.pop_front();
-        }
     }
-    show_console_cursor(true);
-    bar.mark_as_completed();
 #endif
 
     t_end = std::chrono::system_clock::now();
@@ -219,36 +183,11 @@ void simple_test() {
     cout << endl;
 }
 
-void progress_test() {
-
-
-    using namespace indicators;
-    ProgressBar bar{
-            option::BarWidth{50},
-            option::Start{"["},
-            option::Fill{"="},
-            option::Lead{">"},
-            option::Remainder{" "},
-            option::End{"]"},
-            option::PostfixText{"Extracting Archive"},
-            option::ForegroundColor{Color::green},
-            option::FontStyles{std::vector<FontStyle>{FontStyle::bold}}
-    };
-
-    while (true) {
-        bar.tick();
-        if (bar.is_completed())
-            break;
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }
-
-}
 
 int main() {
     std::ios::sync_with_stdio(false);
     cout << cpp_env() << endl;
     //simple_test();
     test();
-    //progress_test();
     return 0;
 }
