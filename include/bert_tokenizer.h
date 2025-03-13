@@ -709,25 +709,31 @@ public:
         std::vector<std::vector<int> > input_ids(texts.size());
 
 #pragma omp parallel for
-        for (size_t i = 0; i < texts.size(); i++) {
+        for (int i = 0; i < static_cast<int>(texts.size()); i++) {
             input_ids[i] = tokenizer_ids(texts[i], max_length, padding);
         }
         return input_ids;
     }
 #else
-    virtual std::vector<std::vector<int> > operator()(const std::vector<std::string> &texts,
-                                                      const std::string &padding = "longest",
-                                                      int max_length = 100) {
-        std::vector<std::future<std::vector<int> > > futures;
+    virtual std::vector<std::vector<int>> operator()(const std::vector<std::string> &texts,
+                                                     const std::string &padding = "longest",
+                                                     int max_length = 100) {
+        std::vector<std::future<std::invoke_result_t<decltype(&std::decay_t<decltype(*this)>::tokenizer_ids),
+                decltype(this), const std::string&, int, const std::string&>>> futures;
         futures.reserve(texts.size());
-        for (const auto &text: texts)
+
+        for (const auto &text : texts) {
             futures.push_back(pool.enqueue([this, &text, max_length, &padding] {
                 return tokenizer_ids(text, max_length, padding);
             }));
-        std::vector<std::vector<int> > input_ids;
-        for (auto &f: futures) {
+        }
+
+        std::vector<std::vector<int>> input_ids;
+        input_ids.reserve(futures.size());
+        for (auto &f : futures) {
             input_ids.push_back(f.get());
         }
+
         return input_ids;
     }
 #endif

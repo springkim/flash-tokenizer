@@ -100,10 +100,11 @@ static std::string cpp_env(const std::string &version = "dev") {
 #else
         cpp_version << "C++98/03";
 #endif
-    oss << " - " << cpp_version.str();
+    oss << " - " << cpp_version.str() << "[" << __cplusplus << "]";
 #ifdef _OPENMP
     oss << "(OPENMP)";
 #endif
+
     return oss.str();
 }
 

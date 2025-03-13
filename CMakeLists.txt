@@ -33,20 +33,21 @@ elseif (APPLE)
 endif ()
 
 option(BUILD_EXECUTABLE "Build the executable" ON)
-option(BUILD_PYTHON_MODULE "Build the Python module" OFF)
+option(BUILD_PYTHON_MODULE "Build the Python module" ON)
 
 
 #file(GLOB SRC_FILES "src/bert_tokenizer.cpp")
+
 set(SRC_FILES src/bert_tokenizer.cpp)
 ##### OpenMP
-find_package(OpenMP REQUIRED)
-
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    find_package(OpenMP)
     set(COMPILE_OPTIONS -O3 -funroll-loops)
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    set(COMPILE_OPTIONS -O3 -march=native -flto -funroll-loops -ffast-math -fno-clangir)
+    set(COMPILE_OPTIONS -O3 -march=native -flto -funroll-loops -ffast-math)
 elseif (MSVC)
-    set(COMPILE_OPTIONS /O2 /GS /GL /Ox /Ob2 /GR /arch:AVX2 /Gd /Oi /MT /Ot)
+    find_package(OpenMP)
+    set(COMPILE_OPTIONS /O2)
 endif ()
 
 
@@ -54,7 +55,7 @@ if (BUILD_PYTHON_MODULE)
     if (NOT CUSTOM_PYTHON)
         find_package(Python COMPONENTS Interpreter Development.Module REQUIRED)
     endif ()
-    #find_package(Python COMPONENTS Interpreter Development.Module REQUIRED)
+    find_package(Python COMPONENTS Interpreter Development.Module REQUIRED)
 
     execute_process(
             COMMAND "${Python_EXECUTABLE}" -c "import pybind11; print(pybind11.get_cmake_dir())"
