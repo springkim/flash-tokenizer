@@ -3,8 +3,8 @@ requires = ["scikit-build-core>=0.4.3", "pybind11>=2.10.0"]
 build-backend = "scikit_build_core.build"
 
 [project]
-name = "flash-tokenizer"
-version = "0.9.3"
+name = "flash_tokenizer"
+version = "0.9.6"
 description = "FlashBertTokenizer implementation with C++ backend"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -19,8 +19,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.12"
 ]
 dependencies = [
     "numpy==1.26.4",
@@ -34,7 +33,6 @@ Issues = "https://github.com/NLPOptimize/flash-tokenizer/issues"
 [tool.scikit-build]
 wheel.expand-macos-universal-tags = true
 cmake.build-type = "Release"
-wheel.packages = ["flash_tokenizer"]
 
 
 [tool.setuptools.exclude-package-data]

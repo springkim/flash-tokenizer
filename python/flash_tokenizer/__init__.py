@@ -49,7 +49,7 @@ class BertTokenizerFlash:
                  return_length: bool = False,
                  verbose: bool = True,
                  suffix_indicator: str = '##'):
-        input_ids = self.tokenizer(text, padding, max_length)
+        input_ids = self.tokenizer(text, max_length, padding)
         if return_tensors == "np":
             return np.array(input_ids)[None]
         return [input_ids]
