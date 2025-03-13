@@ -16,12 +16,12 @@
 #include "env.h"
 
 //#define DEEPCT
-#define  KCBERT_BASE
-//#define DEEPCT_KRBERT
+//#define  KCBERT_BASE
+#define DEEPCT_KRBERT
 //#define SPLADE
 
 
-//#define MP 256
+#define MP 256
 
 #ifdef KCBERT_BASE
 #define TEXTS_PATH "../dataset/kcbert_base/text_1M.txt"
@@ -135,7 +135,7 @@ void test() {
     cout << "Loading: " << Timer::Watch("LoadDataset").accu << endl;
 
 
-    FlashBertTokenizer tokenizer(VOCAB_PATH, DO_LOWER);
+    TokenizerClass tokenizer(VOCAB_PATH, DO_LOWER);
     std::chrono::system_clock::time_point t_beg, t_end;
     std::chrono::duration<double> diff{};
 
@@ -162,7 +162,7 @@ void test() {
     gts_group.push_back(gt_chunk);
     titles.push_back(chunk);
     for (size_t i = 0; i < titles.size(); i++) {
-        auto ids = tokenizer(titles[i], "longest", MAX_LENGTH);
+        auto ids = tokenizer.batch_encode(titles[i], "longest", MAX_LENGTH);
         for (size_t j = 0; j < ids.size(); j++) {
             if (ids[j] == gts_group[i][j]) {
                 correct += 1;
