@@ -45,14 +45,11 @@
 #include <vector>
 #include <string>
 #include <regex>
-#include <unordered_map>
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
 #include <chrono>
-#include <fstream>
 #include <map>
-#include <forward_list>
 #include <list>
 #include <functional>
 #include <thread>
@@ -61,13 +58,8 @@
 #include "robin_hood.h"
 #include "env.h"
 #include "debugging.h"
-#include "version.h"
-
-#ifdef _OPENMP
-#include "omp.h"
-#else
 #include "thread_pool.h"
-#endif
+#include "version.h"
 
 #if defined(_WIN32) || defined(_WIN64)
 #define SELECT_ANY  __declspec(selectany)
@@ -80,19 +72,24 @@
 #define OPTIMIZED
 
 
+#include "allocator.h"
+
+
 #define LIST 1
 #define DEQUE 0
 #define VECTOR 0
 
 #if LIST == 1
 using STRING_LIST = std::list<std::string>;
-#define CONCAT(A, B) A.splice(A.end(),B)
+using STRING_LIST_FAST = std::list<std::string, FastPoolAllocator<std::string> >;
+#define CONCAT(A, B) (A).splice((A).end(),(B))
 #elif DEQUE == 1
 using STRING_LIST = std::deque<std::string>;
-#define CONCAT(A, B) std::move(B.begin(),B.end(),std::back_inserter(A))
+using STRING_LIST_FAST = std::deque<std::string, FastPoolAllocator<std::string> >;
+#define CONCAT(A, B) std::move((B).begin(),(B).end(),std::back_inserter((A)))
 #elif VECTOR == 1
 using STRING_LIST = std::vector<std::string>;
-#define CONCAT(A, B) std::move(B.begin(),B.end(),std::back_inserter(A))
+#define CONCAT(A, B) std::move((B).begin(),(B).end(),std::back_inserter((A)))
 #endif
 
 #define LIST_IDS 0
@@ -107,50 +104,22 @@ using INT_LIST = std::list<INTEGER_TYPE>;
 #define IDS_RETURN(A)   std::vector<int>((A).begin(),(A).end())
 #elif DEQUE_IDS == 1
 using INT_LIST = std::deque<INTEGER_TYPE>;
-#define IDS_CONCAT(A, B) std::move(B.begin(),B.end(),std::back_inserter(A))
+#define IDS_CONCAT(A, B) std::move((B).begin(),(B).end(),std::back_inserter((A)))
 #define INIT(A,B) ((void)0)
 #define IDS_RETURN(A)   std::vector<int>((A).begin(),(A).end())
 #elif VECTOR_IDS == 1
 using INT_LIST = std::vector<INTEGER_TYPE>;
-#define IDS_CONCAT(A, B) std::move(B.begin(),B.end(),std::back_inserter(A))
+#define IDS_CONCAT(A, B) std::move((B).begin(),(B).end(),std::back_inserter((A)))
 #define INIT(A, B) (A).reserve((B))
 #define IDS_RETURN(A)   (A)
 #endif
-
-static std::string reverse_string(std::string s) {
-    std::reverse(s.begin(), s.end());
-    return s;
-
-    std::vector<std::vector<char> > b;
-    int i = 0;
-    while (i < s.length()) {
-        std::vector<char> a;
-        a.push_back(s[i]);
-        if (s[i] < 0) {
-            a.push_back(s[i + 1]);
-            a.push_back(s[i + 2]);
-            i += 2;
-        }
-        i++;
-        b.push_back(a);
-    }
-    std::string rev;
-    std::reverse(b.begin(), b.end());
-    for (size_t i = 0; i < b.size(); i++) {
-        for (size_t j = 0; j < b[i].size(); j++) {
-            rev.push_back(b[i][j]);
-        }
-    }
-
-    return rev;
-}
 
 OPTIMIZED class Vocab {
 public:
     std::vector<std::string> tokens;
     robin_hood::unordered_flat_map<std::string, int> token_to_index;
 
-    explicit Vocab(const std::string &filename, bool reverse = false) {
+    explicit Vocab(const std::string &filename) {
         std::ifstream ifs(filename);
         if (!ifs) {
             std::cerr << "File not found" << filename << "\n";
@@ -161,9 +130,6 @@ public:
             line.erase(line.find_last_not_of(" \n\r\t") + 1);
             if (line.empty()) continue;
             auto idx = static_cast<int>(tokens.size());
-            if (reverse) {
-                line = reverse_string(line);
-            }
             tokens.push_back(line);
             token_to_index[line] = idx;
         }
@@ -177,9 +143,9 @@ public:
     }
 };
 
-
+template<typename StringList>
 OPTIMIZED static std::vector<int>
-convert_by_vocab(const Vocab &vocab, const STRING_LIST &items, int max_length = -1) {
+convert_by_vocab(const Vocab &vocab, const StringList &items, int max_length = -1) {
     const size_t size = items.size();
     const size_t final_size = (max_length != -1 && static_cast<size_t>(max_length) > size)
                                   ? static_cast<size_t>(max_length)
@@ -197,9 +163,9 @@ convert_by_vocab(const Vocab &vocab, const STRING_LIST &items, int max_length = 
     return ids;
 }
 
-
-OPTIMIZED static STRING_LIST whitespace_tokenize(const std::string &text, const std::vector<bool> &isSpace) {
-    STRING_LIST tokens;
+template<typename StringList>
+OPTIMIZED static StringList whitespace_tokenize(const std::string &text, const std::vector<bool> &isSpace) {
+    StringList tokens;
     const char *data = text.data();
     const char *end = data + text.size();
     while (data < end) {
@@ -218,75 +184,82 @@ OPTIMIZED static STRING_LIST whitespace_tokenize(const std::string &text, const 
 }
 
 
-static std::string clean_text(const std::string &text, const std::vector<char> &char_map) {
-    if (text.empty()) return {};
-
-
+OPTIMIZED static std::string clean_text(const std::string &text, const std::vector<char> &char_map) {
+    if (text.empty())
+        return {};
     std::string result;
-    result.reserve(text.size());
-
+    result.resize(text.size());
+    size_t out_index = 0;
     const char *p = text.data();
     const char *end = p + text.size();
+    const char *map = char_map.data();
 
     while (p < end) {
         auto c = static_cast<unsigned char>(*p);
-
         if (c == 0) {
             ++p;
             continue;
         }
-
         if (c < 0x80) {
-            result.push_back(char_map[c]);
-            ++p;
+            const char *start = p;
+            while (p < end && static_cast<unsigned char>(*p) < 0x80 && *p != 0)
+                ++p;
+            for (const char *q = start; q < p; ++q)
+                result[out_index++] = map[static_cast<unsigned char>(*q)];
         } else {
             int skip = 0;
-
-            if ((c & 0xE0) == 0xC0 && p + 1 < end) {
+            if ((c & 0xE0) == 0xC0 && p + 1 < end)
                 skip = 2;
-            } else if ((c & 0xF0) == 0xE0 && p + 2 < end) {
+            else if ((c & 0xF0) == 0xE0 && p + 2 < end)
                 skip = 3;
-            } else if ((c & 0xF8) == 0xF0 && p + 3 < end) {
+            else if ((c & 0xF8) == 0xF0 && p + 3 < end)
                 skip = 4;
-            }
-
             if (skip > 0) {
-                size_t old_size = result.size();
-                result.resize(old_size + skip);
-                std::copy_n(p, skip, result.begin() + old_size);
+                memcpy(&result[out_index], p, skip);
+                out_index += skip;
                 p += skip;
             } else {
                 ++p;
             }
         }
     }
-
+    result.resize(out_index);
     return result;
 }
 
-
-static STRING_LIST split_on_punc(const std::string &text) {
-    STRING_LIST tokens;
+template<typename StringList>
+OPTIMIZED static StringList split_on_punc(const std::string &text) {
+    StringList tokens;
     std::string buffer;
     const char *p = text.data();
     const char *end = p + text.size();
 
-    auto flush = [&]() {
-        if (!buffer.empty()) {
-            tokens.push_back(std::move(buffer));
-            buffer.clear();
-        }
+    auto isAsciiPunct = [](unsigned char c) {
+        return (c >= 33 && c <= 47) ||
+               (c >= 58 && c <= 64) ||
+               (c >= 91 && c <= 96) ||
+               (c >= 123 && c <= 126);
+    };
+
+    auto isAsciiSpace = [](unsigned char c) {
+        return c == 9 || c == 10 || c == 11 || c == 12 || c == 13 || c == 32;
     };
 
     while (p < end) {
         auto c = static_cast<unsigned char>(*p);
         if (c < 0x80) {
-            if (std::ispunct(c)) {
-                flush();
+            if (isAsciiPunct(c)) {
+                if (!buffer.empty()) {
+                    tokens.push_back(std::move(buffer));
+                    buffer.clear();
+                }
                 tokens.emplace_back(1, c);
                 ++p;
-            } else if (std::isspace(c)) {
-                flush();
+            } else if (isAsciiSpace(c)) {
+                if (!buffer.empty()) {
+                    tokens.push_back(std::move(buffer));
+                    buffer.clear();
+                }
                 ++p;
             } else {
                 buffer.push_back(c);
@@ -306,13 +279,14 @@ static STRING_LIST split_on_punc(const std::string &text) {
             p += len;
         }
     }
-    flush();
+    if (!buffer.empty())
+        tokens.push_back(std::move(buffer));
     return tokens;
 }
 
-
-OPTIMIZED static STRING_LIST to_lower_split_on_punc(const std::string &text) {
-    STRING_LIST tokens;
+template<typename StringList>
+OPTIMIZED static StringList to_lower_split_on_punc(const std::string &text) {
+    StringList tokens;
     std::string buffer;
     const char *p = text.data(), *end = p + text.size();
     while (p < end) {
@@ -427,9 +401,6 @@ OPTIMIZED static std::string tokenize_chinese_chars(const std::string &text) {
 }
 
 class BasicTokenizer {
-    using SplitFunction = STRING_LIST (*)(const std::string &);
-    SplitFunction split_function = nullptr;
-
 public:
     const bool do_lower_case;
     std::vector<char> char_map{};
@@ -453,32 +424,25 @@ public:
         isSpace['\v'] = true;
         isSpace['\f'] = true;
         isSpace['\r'] = true;
-        if (do_lower_case) {
-            split_function = to_lower_split_on_punc;
-        } else {
-            split_function = split_on_punc;
-        }
     }
 
-
-    [[nodiscard]] STRING_LIST tokenize(const std::string &text) const {
-        STRING_LIST output;
+    template<typename StringList>
+    [[nodiscard]] StringList tokenize(const std::string &text) const {
+        StringList output;
         std::string cleaned = clean_text(text, this->char_map);
         std::string tokenized = tokenize_chinese_chars(cleaned);
-        STRING_LIST orig_tokens = whitespace_tokenize(tokenized, this->isSpace);
-#if PARALLEL_STL == 1
-        std::mutex mutex;
-        std::for_each(std::execution::par, orig_tokens.begin(), orig_tokens.end(), [&](auto &token) {
-            auto sub_tokens = this->split_function(token);
-            std::lock_guard<std::mutex> lock(mutex);
-            CONCAT(output, sub_tokens);
-        });
-#else
-        for (const auto &token: orig_tokens) {
-            auto sub_tokens = this->split_function(token);
-            CONCAT(output, sub_tokens);
+        StringList orig_tokens = whitespace_tokenize<StringList>(tokenized, this->isSpace);
+        if (this->do_lower_case) {
+            for (const auto &token: orig_tokens) {
+                auto sub_tokens = to_lower_split_on_punc<StringList>(token);
+                CONCAT(output, sub_tokens);
+            }
+        } else {
+            for (const auto &token: orig_tokens) {
+                auto sub_tokens = split_on_punc<StringList>(token);
+                CONCAT(output, sub_tokens);
+            }
         }
-#endif
         return output;
     }
 };
@@ -525,8 +489,9 @@ public:
         }
     }
 
-    OPTIMIZED [[nodiscard]] STRING_LIST tokenize(const std::string &token, int max_length) const {
-        STRING_LIST output;
+    template<typename StringList>
+    OPTIMIZED [[nodiscard]] StringList tokenize(const std::string &token, int max_length) const {
+        StringList output;
         if (token.size() > static_cast<size_t>(max_length)) {
             return {this->UNK};
         }
@@ -570,7 +535,7 @@ public:
 
     void tokenizer_ids(const std::string &token, int max_length, INT_LIST &input_ids) const {
         if (token.size() > static_cast<size_t>(max_length)) {
-            input_ids.push_back(vocab.get(UNK));
+            input_ids.push_back(this->UNK_NUM);
         }
         int original_size = input_ids.size();
         size_t pos = token.size();
@@ -605,15 +570,15 @@ public:
 };
 
 class FlashBertTokenizer {
-protected:
+public:
     const std::string UNK = "[UNK]";
     const std::string CLS = "[CLS]";
     const std::string SEP = "[SEP]";
     int CLS_NUM{};
     int SEP_NUM{};
-#ifndef _OPENMP
+    int UNK_NUM{};
+
     ThreadPool pool;
-#endif
 
 public:
     virtual ~FlashBertTokenizer() = default;
@@ -628,6 +593,7 @@ public:
           wordpiece(vocab, this->UNK) {
         this->CLS_NUM = vocab.get(this->CLS);
         this->SEP_NUM = vocab.get(this->SEP);
+        this->UNK_NUM = vocab.get(this->UNK);
         this->_version_ = cpp_env(VERSION);
     }
 
@@ -636,11 +602,12 @@ public:
     }
 
 protected:
-    STRING_LIST tokenize(const std::string &text, int max_length = 100) {
+    template<typename StringList>
+    StringList tokenize(const std::string &text, int max_length = 100) {
         const size_t allowed_length = max_length - 1;
-        STRING_LIST output;
+        StringList output;
         output.emplace_back(this->CLS);
-        auto basic_tokens = basic.tokenize(text);
+        auto basic_tokens = basic.tokenize<StringList>(text);
         for (const auto &token: basic_tokens) {
             auto wp_tokens = wordpiece.tokenize(token, max_length);
             CONCAT(output, wp_tokens);
@@ -653,14 +620,14 @@ protected:
         return output;
     }
 
-
-    virtual std::vector<int> tokenizer_ids(const std::string &text, int max_length, const std::string &padding) {
+    template<typename StringList>
+    std::vector<int> tokenizer_ids(const std::string &text, int max_length, const std::string &padding) {
         const size_t allowed_length = max_length - 1;
         INT_LIST input_ids;
         INIT(input_ids, static_cast<int>(max_length * 1.2));
 
         input_ids.emplace_back(this->CLS_NUM);
-        auto basic_tokens = basic.tokenize(text);
+        auto basic_tokens = basic.tokenize<StringList>(text);
         for (const auto &token: basic_tokens) {
             wordpiece.tokenizer_ids(token, max_length, input_ids);
 
@@ -678,8 +645,9 @@ protected:
     }
 
 public:
+    template<typename StringList>
     [[nodiscard]] std::vector<int>
-    convert_tokens_to_ids(const STRING_LIST &tokens, int max_length = -1) const {
+    convert_tokens_to_ids(const StringList &tokens, int max_length = -1) const {
         return convert_by_vocab(vocab, tokens, max_length);
     }
 
@@ -693,82 +661,76 @@ public:
         return tokens;
     }
 
-    virtual std::vector<int> encode(const std::string &text, const std::string &padding = "longest", int max_length = 100) {
-        return this->tokenizer_ids(text, max_length, padding);
+public:
+    virtual std::vector<int> encode(const std::string &text, const std::string &padding = "longest",
+                                    int max_length = 100) {
+        return this->tokenizer_ids<STRING_LIST>(text, max_length, padding);
     }
 
-#ifdef _OPENMP
     virtual std::vector<std::vector<int> > batch_encode(const std::vector<std::string> &texts,
                                                         const std::string &padding = "longest",
                                                         int max_length = 100) {
-        std::vector<std::vector<int> > input_ids(texts.size());
-
-#pragma omp parallel for
-        for (int i = 0; i < static_cast<int>(texts.size()); i++) {
-            input_ids[i] = this->tokenizer_ids(texts[i], max_length, padding);
-        }
-        return input_ids;
-    }
-#else
-    virtual std::vector<std::vector<int>> batch_encode(const std::vector<std::string> &texts,
-                                                     const std::string &padding = "longest",
-                                                     int max_length = 100) {
-        std::vector<std::future<std::invoke_result_t<decltype(&std::decay_t<decltype(*this)>::tokenizer_ids),
-                decltype(this), const std::string&, int, const std::string&>>> futures;
+        std::vector<std::future<std::invoke_result_t<decltype(&std::decay_t<decltype(*this)>::tokenizer_ids<STRING_LIST>
+            ),
+            decltype(this), const std::string &, int, const std::string &> > > futures;
         futures.reserve(texts.size());
 
-        for (const auto &text : texts) {
+        for (const auto &text: texts) {
             futures.push_back(pool.enqueue([this, &text, max_length, &padding] {
-                return this->tokenizer_ids(text, max_length, padding);
+                return this->tokenizer_ids<STRING_LIST>(text, max_length, padding);
             }));
         }
 
-        std::vector<std::vector<int>> input_ids;
+        std::vector<std::vector<int> > input_ids;
         input_ids.reserve(futures.size());
-        for (auto &f : futures) {
+        for (auto &f: futures) {
             input_ids.push_back(f.get());
         }
 
         return input_ids;
     }
-#endif
 };
 
 class FlashBertTokenizerBidirectional : public FlashBertTokenizer {
 public:
     WordpieceBackwardTokenizer wordpiece_backward;
 
-
-    explicit FlashBertTokenizerBidirectional(const std::string &vocab_file, bool do_lower_case = true) : FlashBertTokenizer(vocab_file, do_lower_case), wordpiece_backward(vocab, this->UNK) {
+    explicit
+    FlashBertTokenizerBidirectional(const std::string &vocab_file, bool do_lower_case = true) : FlashBertTokenizer(
+            vocab_file, do_lower_case), wordpiece_backward(vocab, this->UNK) {
     }
 
-protected:
-    std::vector<int> tokenizer_ids(const std::string &text, int max_length, const std::string &padding) override {
+    template<typename StringList>
+    std::vector<int> tokenizer_ids(const std::string &text, int max_length, const std::string &padding) {
         const size_t allowed_length = max_length - 1;
         INT_LIST input_ids;
         INIT(input_ids, static_cast<int>(max_length * 1.2));
 
+        INT_LIST i0, i1;
+        INT_LIST filtered_i0, filtered_i1;
+        i0.reserve(max_length);
+        i1.reserve(max_length);
+        filtered_i0.reserve(max_length);
+        filtered_i1.reserve(max_length);
+
         input_ids.emplace_back(this->CLS_NUM);
-        auto basic_tokens = basic.tokenize(text);
+        auto basic_tokens = basic.tokenize<StringList>(text);
         for (const auto &token: basic_tokens) {
-            INT_LIST i0, i1;
+            i0.clear();
+            i1.clear();
+            filtered_i0.clear();
+            filtered_i1.clear();
+
             wordpiece.tokenizer_ids(token, max_length, i0);
             wordpiece_backward.tokenizer_ids(token, max_length, i1);
 
-            INT_LIST filtered_i0;
-            INT_LIST filtered_i1;
-            auto over4 = [](int i)-> bool { return i > 4; };
-
-            std::copy_if( i0.begin(), i0.end(), std::back_inserter(filtered_i0), over4);
-            std::copy_if( i1.begin(), i1.end(), std::back_inserter(filtered_i1),over4);
+            std::copy_if(i0.begin(), i0.end(), std::back_inserter(filtered_i0), [](int i) { return i > 4; });
+            std::copy_if(i1.begin(), i1.end(), std::back_inserter(filtered_i1), [](int i) { return i > 4; });
 
             std::sort(filtered_i0.begin(), filtered_i0.end());
             std::sort(filtered_i1.begin(), filtered_i1.end());
-            if (filtered_i0 < filtered_i1) {
-                IDS_CONCAT(input_ids, i0);
-            } else {
-                IDS_CONCAT(input_ids, i1);
-            }
+
+            IDS_CONCAT(input_ids, filtered_i0 < filtered_i1 ? i0 : i1);
             if (input_ids.size() > allowed_length) {
                 input_ids.resize(allowed_length);
                 break;
@@ -782,44 +744,33 @@ protected:
     }
 
 public:
-    std::vector<int> encode(const std::string &text, const std::string &padding = "longest", int max_length = -1) override {
-        return this->tokenizer_ids(text, max_length, padding);
+    std::vector<int> encode(const std::string &text, const std::string &padding = "longest",
+                            int max_length = -1) override {
+        return this->tokenizer_ids<STRING_LIST_FAST>(text, max_length, padding);
     }
-#ifdef _OPENMP
-     std::vector<std::vector<int> > batch_encode(const std::vector<std::string> &texts,
-                                                        const std::string &padding = "longest",
-                                                        int max_length = 100) override {
-        std::vector<std::vector<int> > input_ids(texts.size());
 
-#pragma omp parallel for
-        for (int i = 0; i < static_cast<int>(texts.size()); i++) {
-            input_ids[i] = this->tokenizer_ids(texts[i], max_length, padding);
-        }
-        return input_ids;
-    }
-#else
-     std::vector<std::vector<int>> batch_encode(const std::vector<std::string> &texts,
-                                                     const std::string &padding = "longest",
-                                                     int max_length = 100) override {
-        std::vector<std::future<std::invoke_result_t<decltype(&std::decay_t<decltype(*this)>::tokenizer_ids),
-                decltype(this), const std::string&, int, const std::string&>>> futures;
+    std::vector<std::vector<int> > batch_encode(const std::vector<std::string> &texts,
+                                                const std::string &padding = "longest",
+                                                int max_length = 100) override {
+        std::vector<std::future<std::invoke_result_t<decltype(&std::decay_t<decltype(*this)>::tokenizer_ids<STRING_LIST>
+            ),
+            decltype(this), const std::string &, int, const std::string &> > > futures;
         futures.reserve(texts.size());
 
-        for (const auto &text : texts) {
+        for (const auto &text: texts) {
             futures.push_back(pool.enqueue([this, &text, max_length, &padding] {
-                return this->tokenizer_ids(text, max_length, padding);
+                return this->tokenizer_ids<STRING_LIST>(text, max_length, padding);
             }));
         }
 
-        std::vector<std::vector<int>> input_ids;
+        std::vector<std::vector<int> > input_ids;
         input_ids.reserve(futures.size());
-        for (auto &f : futures) {
+        for (auto &f: futures) {
             input_ids.push_back(f.get());
         }
 
         return input_ids;
     }
-#endif
 };
 
 #endif

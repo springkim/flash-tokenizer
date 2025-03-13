@@ -16,16 +16,15 @@
 #include "env.h"
 
 //#define DEEPCT
-//#define  KCBERT_BASE
-#define DEEPCT_KRBERT
+#define  KCBERT_BASE
+//#define DEEPCT_KRBERT
 //#define SPLADE
 
-
-#define MP 256
+//#define MP 256
 
 #ifdef KCBERT_BASE
-#define TEXTS_PATH "../dataset/kcbert_base/text_1M.txt"
-#define IDS_PATH "../dataset/kcbert_base/text_1M_gt.txt"
+#define TEXTS_PATH "../dataset/kcbert_base/text_10M.txt"
+#define IDS_PATH "../dataset/kcbert_base/text_10M_gt.txt"
 #define VOCAB_PATH "../dataset/kcbert_base/vocab_kcbert_base.txt"
 #define MAX_LENGTH 300
 #define DO_LOWER false

@@ -1,9 +1,42 @@
 //
-// Created by SPRING on 2025. 3. 11..
+//  IMPORTANT: READ BEFORE DOWNLOADING, COPYING, INSTALLING OR USING.
+//
+//  By downloading, copying, installing or using the software you agree to this license.
+//  If you do not agree to this license, do not download, install,
+//  copy or use the software.
+//
+//
+//                               License Agreement
+//                            ThreadPool4BatchEncoding
+//
+//               Copyright (C) 2025, Kim Bomm, all rights reserved.
+//
+// Third party copyrights are property of their respective owners.
+//
+// Redistribution and use in source and binary forms, with or without modification,
+// are permitted provided that the following conditions are met:
+//
+//   * Redistribution's of source code must retain the above copyright notice,
+//     this list of conditions and the following disclaimer.
+//
+//   * Redistribution's in binary form must reproduce the above copyright notice,
+//     this list of conditions and the following disclaimer in the documentation
+//     and/or other materials provided with the distribution.
+//
+//   * The name of the copyright holders may not be used to endorse or promote products
+//     derived from this software without specific prior written permission.
+//
+// This software is provided by the copyright holders and contributors "as is" and
+// any express or implied warranties, including, but not limited to, the implied
+// warranties of merchantability and fitness for a particular purpose are disclaimed.
+// loss of use, data, or profits; or business interruption) however caused
+// and on any theory of liability, whether in contract, strict liability,
+// or tort (including negligence or otherwise) arising in any way out of
+// the use of this software, even if advised of the possibility of such damage.
 //
 
-#ifndef FLASH_TOKENIZER_THREAD_POOL_H
-#define FLASH_TOKENIZER_THREAD_POOL_H
+#ifndef nJQYFBCpP0wmcLcM44pAtvKYTdABjnrWexmfMjqxNr852c6J09
+#define nJQYFBCpP0wmcLcM44pAtvKYTdABjnrWexmfMjqxNr852c6J09
 
 #include <vector>
 #include <string>
@@ -17,7 +50,7 @@
 
 class ThreadPool {
 public:
-    ThreadPool(size_t numThreads = 0) : stop(false) {
+    explicit ThreadPool(size_t numThreads = 0) : stop(false) {
         if (numThreads == 0) {
             numThreads = std::thread::hardware_concurrency();
         }
@@ -74,4 +107,4 @@ private:
     bool stop;
 };
 
-#endif //FLASH_TOKENIZER_THREAD_POOL_H
+#endif

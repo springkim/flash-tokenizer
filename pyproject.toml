@@ -4,8 +4,8 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "flash_tokenizer"
-version = "0.9.9"
-description = "FlashBertTokenizer implementation with C++ backend"
+version = "1.0.1"
+description = "Extremely fast bert tokenizer"
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
