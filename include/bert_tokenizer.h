@@ -79,11 +79,6 @@
 
 #define OPTIMIZED
 
-#ifdef __clang__
-#define PARALLEL_STL 0
-#else
-#define PARALLEL_STL 1
-#endif
 
 #define LIST 1
 #define DEQUE 0

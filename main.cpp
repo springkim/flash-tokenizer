@@ -15,8 +15,8 @@
 #include "bert_tokenizer.h"
 #include "env.h"
 
-#define DEEPCT
-//#define  KCBERT_BASE
+//#define DEEPCT
+#define  KCBERT_BASE
 //#define DEEPCT_KRBERT
 //#define SPLADE
 

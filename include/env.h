@@ -111,7 +111,7 @@ static std::string cpp_env(const std::string &version = "dev") {
 }
 
 // Parallel STL
-#ifdef __clang__
+#if defined(__clang__) || defined(_MSC_VER)
 #define PARALLEL_STL 0
 #else
 #define PARALLEL_STL 1
