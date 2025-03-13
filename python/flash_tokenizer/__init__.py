@@ -13,9 +13,19 @@ class BertTokenizerFlash:
                  tokenize_chinese_chars=True,
                  strip_accents=None,
                  clean_up_tokenization_spaces=True,
+                 suffix_indicator="##",
+                 bidirectional=False,
                  **kwargs):
-        self.tokenizer = FlashBertTokenizer(vocab_file, do_lower_case)
+        if bidirectional:
+            self.tokenizer = FlashBertTokenizerBidirectional(vocab_file, do_lower_case)
+        else:
+            self.tokenizer = FlashBertTokenizer(vocab_file, do_lower_case)
+        self.__version = self.tokenizer.version()
         pass
+
+    @property
+    def version(self):
+        return self.__version;
 
     def __call__(self,
                  text: str | list[str] | list[list[str]] | None = None,
@@ -37,11 +47,13 @@ class BertTokenizerFlash:
                  return_special_tokens_mask: bool = False,
                  return_offsets_mapping: bool = False,
                  return_length: bool = False,
-                 verbose: bool = True):
+                 verbose: bool = True,
+                 suffix_indicator: str = '##'):
         input_ids = self.tokenizer(text, padding, max_length)
         if return_tensors == "np":
             return np.array(input_ids)[None]
         return [input_ids]
 
 
-__all__ = ["FlashBertTokenizer", "FlashBertTokenizerBidirectional", "BertTokenizerFlash"]
+# __all__ = ["FlashBertTokenizer", "FlashBertTokenizerBidirectional", "BertTokenizerFlash"]
+__all__ = ["BertTokenizerFlash"]

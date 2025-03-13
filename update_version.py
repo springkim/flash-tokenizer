@@ -26,8 +26,8 @@ new_version = input("Enter new version: ")
 
 print(f'Version: {version_toml} => {new_version}')
 check = input('Update version(y,n): ')
-if check=="y":
-    for file in ['pyproject.toml', 'CMakeLists.txt']:
+if check == "y":
+    for file in ['pyproject.toml', 'CMakeLists.txt', 'include/version.h']:
         with open(file, "rt", encoding="utf-8") as f:
             data = f.read().replace(version_toml, new_version)
         with open(file, "wt", encoding="utf-8") as f:

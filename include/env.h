@@ -42,8 +42,9 @@
 #include<string>
 #include<sstream>
 
-std::string cpp_env() {
+static std::string cpp_env(const std::string &version = "dev") {
     std::ostringstream oss;
+    oss << "[" << version << "] ";
 #if defined(_WIN32) || defined(_WIN64)
     const char *os = "Windows";
 #elif defined(__linux__)
@@ -100,7 +101,18 @@ std::string cpp_env() {
         cpp_version << "C++98/03";
 #endif
     oss << " - " << cpp_version.str();
+#ifdef _OPENMP
+    oss << "(OPENMP)";
+#endif
     return oss.str();
 }
+
+// Parallel STL
+#ifdef __clang__
+#define PARALLEL_STL 0
+#else
+#define PARALLEL_STL 1
+#endif
+
 
 #endif

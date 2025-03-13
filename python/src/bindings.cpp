@@ -24,9 +24,10 @@ PYBIND11_MODULE(_core, m) {
     py::class_<FlashBertTokenizer>(m, "FlashBertTokenizer")
             .def(py::init<const std::string &, bool>(),
                  py::arg("vocab_file"),
-                 py::arg("do_lower_case") = true)
+                 py::arg("do_lower_case"))
             .def("convert_tokens_to_ids", &FlashBertTokenizer::convert_tokens_to_ids)
             .def("convert_ids_to_tokens", &FlashBertTokenizer::convert_ids_to_tokens)
+            .def("version",&FlashBertTokenizer::version)
             .def("__call__",
                  [](FlashBertTokenizer &self,
                     py::str text,
@@ -43,7 +44,7 @@ PYBIND11_MODULE(_core, m) {
     py::class_<FlashBertTokenizerBidirectional, FlashBertTokenizer>(m, "FlashBertTokenizerBidirectional")
             .def(py::init<const std::string &, bool>(),
                  py::arg("vocab_file"),
-                 py::arg("do_lower_case") = true)
+                 py::arg("do_lower_case"))
             .def("__call__",
                  [](FlashBertTokenizerBidirectional &self,
                     py::str text,

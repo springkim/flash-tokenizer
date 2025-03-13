@@ -97,7 +97,7 @@ FlashTokenizer is a high-performance tokenizer implementation in C++ of the Bert
 ### Requirements
 
  * g++ / clang++ / MSVC
- * python3.7 ~ 3.12
+ * python3.9 ~ 3.13
 
 ### Install from [PIP](https://pypi.org/project/flash-tokenizer/)
 ```bash
@@ -221,24 +221,33 @@ Accuracy is the result of measuring `transformers.BertTokenizer` as a baseline. 
 Surprisingly, the performance of `tensorflow-text` is much faster than before. However, there is still no advantage for `tensorflow-text' when comparing the four libraries.
 
 
-### DeepCT
+### DeepCT (BertTokenizer)
 | Tokenizer             | Elapsed Time (s) |   titles | Accuracy (%) |
 |-----------------------|----------------|----------|------------|
 | BertTokenizer(Huggingface)     |       255.651  |  404,464 |   100 (Baseline)   |
 | ✨ **BertTokenizerFlash**    | ~~19.1325~~ ➡️ ~~16.526~~ ➡️ **12.5391**🔺 |  404,464 | ~~99.3248~~ ➡️ 99.8442 🔺 |
-| BertTokenizerFast(PP) |        64.6828 |   404464 |    99.8615 |
-| BertTokenizerFast(HF) |        69.6647 |   404464 |    99.8615 |
-| FastBertTokenizer(TF) |        85.5056 |   404464 |    99.8507 |
-| Blingfire             |        12.1941 |   404464 |    96.8979 |
+| BertTokenizerFast(PP) |        64.6828 |   404,464 |    99.8615 |
+| BertTokenizerFast(HF) |        69.6647 |   404,464 |    99.8615 |
+| FastBertTokenizer(TF) |        85.5056 |   404,464 |    99.8507 |
+| Blingfire             |        12.1941 |   404,464 |    96.8979 |
+
+
+### DeepCT (BidirectionalBertTokenizer)
+
+| Tokenizer             | Elapsed Time (s) |   titles | Accuracy (%) |
+|-----------------------|----------------|----------|------------|
+| [BidirectionalBertTokenizer](https://github.com/snunlp/KR-BERT/blob/master/krbert_tensorflow/tokenization_ranked.py)| 193.1238|404,464|100(baseline)|
+|FlashBertTokenizerBidirectional|17.8542|404,464|99.9913|
 
 ### KcBert_base
+
 | Tokenizer             |   Elapsed Time |   titles |   Accuracy |
 |-----------------------|----------------|----------|------------|
-| ✨ **BertTokenizerFlash**    |         7.9542 |  1000000 |    99.5792 |
-| BertTokenizerFast(PP) |        38.3839 |  1000000 |    99.9995 |
-| BertTokenizerFast(HF) |        49.0197 |  1000000 |    99.9995 |
-| FastBertTokenizer(TF) |       188.633  |  1000000 |    99.9826 |
-| Blingfire             |        13.454  |  1000000 |    99.9244 |
+| ✨ **BertTokenizerFlash**    |  7.9542 |  1,000,000 |    99.5792|
+| BertTokenizerFast(PP) |        38.3839 |  1,000,000 |    99.9995 |
+| BertTokenizerFast(HF) |        49.0197 |  1,000,000 |    99.9995 |
+| FastBertTokenizer(TF) |       188.633  |  1,000,000 |    99.9826 |
+| Blingfire             |        13.454  |  1,000,000 |    99.9244 |
 
 
 For both `single text` and `batch text`, PaddleNLP's implementation is always faster than HuggingFace's implementation, and the results are exactly the same, so there is no unique advantage of HuggingFace's `transformers.BertTokenizerFast`.

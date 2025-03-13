@@ -104,7 +104,7 @@ class Timer {
             } else if (typeid(char *).hash_code() == typeid(param).hash_code()
                        || typeid(const char *).hash_code() == typeid(param).hash_code()
                        || typeid(std::string).hash_code() == typeid(param).hash_code()
-                    ) {
+            ) {
                 this->idx = 4;
                 char *tmp;
                 memcpy(&tmp, &param, sizeof(char *));
@@ -146,10 +146,10 @@ private:
 
 private:
     static std::vector<GenericType> mapped;
-    static std::vector<std::pair<double, _TimerCount>> accumulated;
+    static std::vector<std::pair<double, _TimerCount> > accumulated;
     static std::vector<_TimerType> temp;
     static std::deque<GenericType> stk;
-    static std::list<std::pair<GenericType, TimerElement>> watch_map;
+    static std::list<std::pair<GenericType, TimerElement> > watch_map;
 
     template<typename CONTAINER>
     static intptr_t GetPosInContainer(CONTAINER container, const GenericType &pts) {
@@ -175,18 +175,19 @@ public:
     template<typename T>
     static void Tick(T param) {
         using GENERIC_TYPE = typename std::enable_if<
-                std::is_same<char, T>::value
-                || std::is_same<int, T>::value
-                || std::is_same<float, T>::value
-                || std::is_same<double, T>::value
-                || std::is_same<char *, T>::value
-                || std::is_same<const char *, T>::value
-                || std::is_same<std::string, T>::value, T>::type;
+            std::is_same<char, T>::value
+            || std::is_same<int, T>::value
+            || std::is_same<float, T>::value
+            || std::is_same<double, T>::value
+            || std::is_same<char *, T>::value
+            || std::is_same<const char *, T>::value
+            || std::is_same<std::string, T>::value, T>::type;
         GenericType pts;
         pts.SetObject(param);
 
         intptr_t stkidx = Timer::GetPosInContainer(Timer::stk, pts);
-        if (stkidx != -1) {    //exist
+        if (stkidx != -1) {
+            //exist
             std::cerr << "Startclock and endclock is not matched" << std::endl;
         }
         stk.push_back(pts);
@@ -219,17 +220,18 @@ public:
     template<typename T>
     static Timer::TimerElement Tock(T param) {
         using GENERIC_TYPE = typename std::enable_if<
-                std::is_same<char, T>::value
-                || std::is_same<int, T>::value
-                || std::is_same<float, T>::value
-                || std::is_same<double, T>::value
-                || std::is_same<char *, T>::value
-                || std::is_same<const char *, T>::value
-                || std::is_same<std::string, T>::value, T>::type;
+            std::is_same<char, T>::value
+            || std::is_same<int, T>::value
+            || std::is_same<float, T>::value
+            || std::is_same<double, T>::value
+            || std::is_same<char *, T>::value
+            || std::is_same<const char *, T>::value
+            || std::is_same<std::string, T>::value, T>::type;
         GenericType pts;
         pts.SetObject(param);
         intptr_t stkidx = Timer::GetPosInContainer(Timer::stk, pts);
-        if (stkidx == -1) {    //exist
+        if (stkidx == -1) {
+            //exist
             std::cerr << "There is no Tick of this object" << std::endl;
         }
         Timer::stk.erase(Timer::stk.begin() + stkidx);
@@ -245,7 +247,6 @@ public:
             tm.avg = tm.accu / accumulated[idx].second;
         } else {
             std::cerr << "No matched begin entry point" << std::endl;
-
         }
 
         auto it = std::find_if(watch_map.begin(), watch_map.end(),
@@ -270,13 +271,13 @@ public:
     template<typename T>
     static Timer::TimerElement Watch(T param) {
         using GENERIC_TYPE = typename std::enable_if<
-                std::is_same<char, T>::value
-                || std::is_same<int, T>::value
-                || std::is_same<float, T>::value
-                || std::is_same<double, T>::value
-                || std::is_same<char *, T>::value
-                || std::is_same<const char *, T>::value
-                || std::is_same<std::string, T>::value, T>::type;
+            std::is_same<char, T>::value
+            || std::is_same<int, T>::value
+            || std::is_same<float, T>::value
+            || std::is_same<double, T>::value
+            || std::is_same<char *, T>::value
+            || std::is_same<const char *, T>::value
+            || std::is_same<std::string, T>::value, T>::type;
         GenericType pts;
         pts.SetObject(param);
         auto it = std::find_if(watch_map.begin(), watch_map.end(),
@@ -289,14 +290,14 @@ public:
 };
 
 SELECT_ANY std::vector<Timer::GenericType>
-        Timer::mapped;
+Timer::mapped;
 SELECT_ANY std::vector<_TimerType>
-        Timer::temp;
+Timer::temp;
 SELECT_ANY std::deque<Timer::GenericType>
-        Timer::stk;
-SELECT_ANY std::vector<std::pair<double, _TimerCount>>
-        Timer::accumulated;
-SELECT_ANY std::list<std::pair<Timer::GenericType, Timer::TimerElement>>
-        Timer::watch_map;
+Timer::stk;
+SELECT_ANY std::vector<std::pair<double, _TimerCount> >
+Timer::accumulated;
+SELECT_ANY std::list<std::pair<Timer::GenericType, Timer::TimerElement> >
+Timer::watch_map;
 
 #endif
