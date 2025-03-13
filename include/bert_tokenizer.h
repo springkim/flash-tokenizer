@@ -703,7 +703,7 @@ public:
     }
 
 #ifdef _OPENMP
-    virtual std::vector<std::vector<int> > operator()(const std::vector<std::string> &texts,
+    virtual std::vector<std::vector<int> > batch_encode(const std::vector<std::string> &texts,
                                                       const std::string &padding = "longest",
                                                       int max_length = 100) {
         std::vector<std::vector<int> > input_ids(texts.size());
@@ -715,7 +715,7 @@ public:
         return input_ids;
     }
 #else
-    virtual std::vector<std::vector<int>> operator()(const std::vector<std::string> &texts,
+    virtual std::vector<std::vector<int>> batch_encode(const std::vector<std::string> &texts,
                                                      const std::string &padding = "longest",
                                                      int max_length = 100) {
         std::vector<std::future<std::invoke_result_t<decltype(&std::decay_t<decltype(*this)>::tokenizer_ids),

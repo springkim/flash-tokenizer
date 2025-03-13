@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-set(PROJECT_VERSION_STR 0.9.6)
+set(PROJECT_VERSION_STR 0.9.9)
 
 project(flash_tokenizer VERSION ${PROJECT_VERSION_STR})
 set(CMAKE_CXX_STANDARD 17)
@@ -14,7 +14,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #option(CUSTOM_PYTHON "Build with other python" ${CUSTOM_PYTHON})
 ##### Find Python
 if (WIN32)
-    set(PYTHON_VERSIONS "Python313" "Python312" "Python311" "Python310" "Python39" "Python38" "Python37")
+    set(PYTHON_VERSIONS "Python312" "Python311" "Python310" "Python39" "Python38" "Python37")
     foreach (VERSION ${PYTHON_VERSIONS})
         set(PYTHON_PATH "$ENV{USERPROFILE}/AppData/Local/Programs/Python/${VERSION}/python.exe")
         if (EXISTS "${PYTHON_PATH}")
@@ -55,7 +55,7 @@ if (BUILD_PYTHON_MODULE)
     if (CUSTOM_PYTHON)
         find_package(Python COMPONENTS Interpreter Development.Module REQUIRED)
     endif ()
-
+    #find_package(Python COMPONENTS Interpreter Development.Module REQUIRED)
 
     execute_process(
             COMMAND "${Python_EXECUTABLE}" -c "import pybind11; print(pybind11.get_cmake_dir())"
