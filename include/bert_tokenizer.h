@@ -698,19 +698,19 @@ public:
         return tokens;
     }
 
-    virtual std::vector<int> operator()(const std::string &text, const std::string &padding = "longest", int max_length = 100) {
+    virtual std::vector<int> encode(const std::string &text, const std::string &padding = "longest", int max_length = 100) {
         return this->tokenizer_ids(text, max_length, padding);
     }
 
 #ifdef _OPENMP
     virtual std::vector<std::vector<int> > batch_encode(const std::vector<std::string> &texts,
-                                                      const std::string &padding = "longest",
-                                                      int max_length = 100) {
+                                                        const std::string &padding = "longest",
+                                                        int max_length = 100) {
         std::vector<std::vector<int> > input_ids(texts.size());
 
 #pragma omp parallel for
         for (int i = 0; i < static_cast<int>(texts.size()); i++) {
-            input_ids[i] = tokenizer_ids(texts[i], max_length, padding);
+            input_ids[i] = this->tokenizer_ids(texts[i], max_length, padding);
         }
         return input_ids;
     }
@@ -724,7 +724,7 @@ public:
 
         for (const auto &text : texts) {
             futures.push_back(pool.enqueue([this, &text, max_length, &padding] {
-                return tokenizer_ids(text, max_length, padding);
+                return this->tokenizer_ids(text, max_length, padding);
             }));
         }
 
@@ -761,16 +761,14 @@ protected:
             wordpiece_backward.tokenizer_ids(token, max_length, i1);
 
             INT_LIST filtered_i0;
-            std::copy_if(i0.begin(), i0.end(), std::back_inserter(filtered_i0),
-                         [](int i) { return i > 4; });
             INT_LIST filtered_i1;
-            std::copy_if(i1.begin(), i1.end(), std::back_inserter(filtered_i1),
-                         [](int i) { return i > 4; });
+            auto over4 = [](int i)-> bool { return i > 4; };
 
+            std::copy_if( i0.begin(), i0.end(), std::back_inserter(filtered_i0), over4);
+            std::copy_if( i1.begin(), i1.end(), std::back_inserter(filtered_i1),over4);
 
             std::sort(filtered_i0.begin(), filtered_i0.end());
             std::sort(filtered_i1.begin(), filtered_i1.end());
-
             if (filtered_i0 < filtered_i1) {
                 IDS_CONCAT(input_ids, i0);
             } else {
@@ -789,9 +787,44 @@ protected:
     }
 
 public:
-    std::vector<int> operator()(const std::string &text, const std::string &padding = "longest", int max_length = -1) override {
+    std::vector<int> encode(const std::string &text, const std::string &padding = "longest", int max_length = -1) override {
         return this->tokenizer_ids(text, max_length, padding);
     }
+#ifdef _OPENMP
+     std::vector<std::vector<int> > batch_encode(const std::vector<std::string> &texts,
+                                                        const std::string &padding = "longest",
+                                                        int max_length = 100) override {
+        std::vector<std::vector<int> > input_ids(texts.size());
+
+#pragma omp parallel for
+        for (int i = 0; i < static_cast<int>(texts.size()); i++) {
+            input_ids[i] = this->tokenizer_ids(texts[i], max_length, padding);
+        }
+        return input_ids;
+    }
+#else
+     std::vector<std::vector<int>> batch_encode(const std::vector<std::string> &texts,
+                                                     const std::string &padding = "longest",
+                                                     int max_length = 100) override {
+        std::vector<std::future<std::invoke_result_t<decltype(&std::decay_t<decltype(*this)>::tokenizer_ids),
+                decltype(this), const std::string&, int, const std::string&>>> futures;
+        futures.reserve(texts.size());
+
+        for (const auto &text : texts) {
+            futures.push_back(pool.enqueue([this, &text, max_length, &padding] {
+                return this->tokenizer_ids(text, max_length, padding);
+            }));
+        }
+
+        std::vector<std::vector<int>> input_ids;
+        input_ids.reserve(futures.size());
+        for (auto &f : futures) {
+            input_ids.push_back(f.get());
+        }
+
+        return input_ids;
+    }
+#endif
 };
 
 #endif

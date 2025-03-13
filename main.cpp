@@ -171,7 +171,7 @@ void test() {
     }
 #else
     for (size_t i = 0; i < texts.size(); i++) {
-        auto ids = tokenizer(texts[i], "longest", MAX_LENGTH);
+        auto ids = tokenizer.encode(texts[i], "longest", MAX_LENGTH);
         correct += ids == gts[i];
     }
 #endif
@@ -198,7 +198,7 @@ void simple_test() {
     string s = "이것은 놀이공원인가, 호텔인가'…국내 최초 호텔에 테마파크 들어선다";
     // cout << convert_and_reverse(s) << endl;
     auto tokenizer = FlashBertTokenizer(VOCAB_PATH, false);
-    auto ids = tokenizer(s, "longest", 512);
+    auto ids = tokenizer.encode(s, "longest", 512);
     for (auto &e: ids) {
         cout << e << ", ";
     }

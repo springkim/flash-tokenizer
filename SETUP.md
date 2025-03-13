@@ -2,9 +2,8 @@
 
 Windows, MacOS는 아래 python 공식 홈페이지에서 설치한다.
 
-가능하다면 Python 3.10 이상을 추천한다.
+Python 3.7 부터 3.12까지 지원한다.
 
-* https://www.python.org/downloads/release/python-3132/
 * https://www.python.org/downloads/release/python-3129/
 * https://www.python.org/downloads/release/python-3116/
 * https://www.python.org/downloads/release/python-31011/

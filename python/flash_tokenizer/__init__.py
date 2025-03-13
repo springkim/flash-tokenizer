@@ -1,4 +1,5 @@
 from ._core import FlashBertTokenizer, FlashBertTokenizerBidirectional
+from .batch_encoding import BatchEncoding
 import numpy as np
 
 
@@ -28,10 +29,10 @@ class BertTokenizerFlash:
         return self.__version;
 
     def __call__(self,
-                 text: str | list[str] | list[list[str]] | None = None,
-                 text_pair: str | list[str] | list[list[str]] | None = None,
-                 text_target: str | list[str] | list[list[str]] | None = None,
-                 text_pair_target: str | list[str] | list[list[str]] | None = None,
+                 text: str | list[str] | None = None,
+                 text_pair: str | list[str] | None = None,
+                 text_target: str | list[str] | None = None,
+                 text_pair_target: str | list[str] | None = None,
                  add_special_tokens: bool = True,
                  padding: bool | str = False,
                  truncation: bool | str | None = None,
@@ -41,19 +42,23 @@ class BertTokenizerFlash:
                  pad_to_multiple_of: int | None = None,
                  padding_side: bool | None = None,
                  return_tensors: str | None = None,
-                 return_token_type_ids: bool | None = None,
-                 return_attention_mask: bool | None = None,
+                 return_token_type_ids: bool = True,
+                 return_attention_mask: bool = True,
                  return_overflowing_tokens: bool = False,
                  return_special_tokens_mask: bool = False,
                  return_offsets_mapping: bool = False,
                  return_length: bool = False,
                  verbose: bool = True,
                  suffix_indicator: str = '##'):
-        input_ids = self.tokenizer(text, padding, max_length)
+        if isinstance(text, str):
+            input_ids = [self.tokenizer.encode(text, padding, max_length)]
+        elif isinstance(text, list):
+            input_ids = self.tokenizer.batch_encode(text, padding, max_length)
         if return_tensors == "np":
-            return np.array(input_ids)[None]
-        return [input_ids]
+            input_ids = np.array(input_ids)
+        return BatchEncoding(input_ids, return_attention_mask=return_attention_mask,
+                             return_token_type_ids=return_token_type_ids)
 
 
 # __all__ = ["FlashBertTokenizer", "FlashBertTokenizerBidirectional", "BertTokenizerFlash"]
-__all__ = ["BertTokenizerFlash"]
+__all__ = ["BertTokenizerFlash", "BatchEncoding"]

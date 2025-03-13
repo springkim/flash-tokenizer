@@ -103,6 +103,8 @@ static std::string cpp_env(const std::string &version = "dev") {
     oss << " - " << cpp_version.str() << "[" << __cplusplus << "]";
 #ifdef _OPENMP
     oss << "(OPENMP)";
+#else
+    oss << "(std::thread)";
 #endif
 
     return oss.str();
