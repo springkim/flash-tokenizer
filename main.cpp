@@ -17,8 +17,8 @@
 
 //#define DEEPCT
 //#define  KCBERT_BASE
-//#define DEEPCT_KRBERT
-#define SPLADE
+#define DEEPCT_KRBERT
+//#define SPLADE
 
 //#define MP 256
 

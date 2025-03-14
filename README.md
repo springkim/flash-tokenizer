@@ -239,7 +239,7 @@ Surprisingly, the performance of `tensorflow-text` is much faster than before. H
 | Tokenizer             | Elapsed Time (s) |   titles | Accuracy (%) |
 |-----------------------|----------------|----------|------------|
 | [BidirectionalBertTokenizer](https://github.com/snunlp/KR-BERT/blob/master/krbert_tensorflow/tokenization_ranked.py)| 193.1238|404,464|100(baseline)|
-|FlashBertTokenizerBidirectional|17.8542|404,464|99.9913|
+|FlashBertTokenizerBidirectional|~~17.8542~~ ➡️ **9.41044** 🔺|404,464|99.9913|
 
 ### KcBert_base
 
