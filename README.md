@@ -53,7 +53,9 @@ FlashTokenizer is a high-performance tokenizer implementation in C++ of the Bert
 ## News
 
 > [!IMPORTANT]  
-> [Mar 10 2025] Performance improvements through faster token mapping with robin_hood and memory copy minimization with **std::list**.
+> **[Mar 14 2025]** The performance of the `WordPieceTokenizer` and `WordPieceBackwordTokenizer` has been improved using [Trie](https://en.wikipedia.org/wiki/Trie), which was introduced in [Fast WordPiece Tokenization](https://arxiv.org/abs/2012.15524).
+> Using `FastPoolAllocator` in `std::list` improves performance in SingleEncoding, but it is not thread-safe, so `std::list<std::string>` is used as is in BatchEncoding. In BatchEncoding, `OPENMP` is completely removed and only `std::thread` is used.
+> **[Mar 10 2025]** Performance improvements through faster token mapping with robin_hood and memory copy minimization with **std::list**.
 >
 > | Container   | Elapsed Time | Max RPS | Description                                                  |
 > | ----------- | ------------ | ------- | ------------------------------------------------------------ |
@@ -88,7 +90,7 @@ FlashTokenizer is a high-performance tokenizer implementation in C++ of the Bert
 >    
 >    
 >    
-> [Mar 09 2025] Completed development of flash-tokenizer for BertTokenizer.
+> **[Mar 09 2025]** Completed development of flash-tokenizer for BertTokenizer.
 
 
 
@@ -332,7 +334,7 @@ As you can see in [how to install rapids](https://docs.rapids.ai/install/), it o
 
 - [x] [BidirectionalWordPieceTokenizer](https://github.com/snunlp/KR-BERT/blob/master/krbert_tensorflow/tokenization_ranked.py)
 - [x] BatchEncoder with Multithreading. 
-- [ ] CUDA Version.
+- [ ] ~~CUDA Version.~~
 - [x] Replace `std::list` to `boost::intrusive::list`.
 
 

@@ -39,7 +39,6 @@
 #define nJQYFBCpP0wmcLcM44pAtvKYTdABjnrWexmfMjqxNr852c6J09
 
 #include <vector>
-#include <string>
 #include <queue>
 #include <thread>
 #include <mutex>
@@ -50,15 +49,18 @@
 
 class ThreadPool {
 public:
-    explicit ThreadPool(size_t numThreads = 0) : stop(false) {
+    size_t num_threads;
+
+    explicit ThreadPool(const size_t numThreads = 0) : stop(false) {
         if (numThreads == 0) {
-            numThreads = std::thread::hardware_concurrency();
+            this->num_threads = std::thread::hardware_concurrency();
+        } else {
+            this->num_threads = numThreads;
         }
-        for (size_t i = 0; i < numThreads; ++i)
+        for (size_t i = 0; i < this->num_threads; ++i)
             workers.emplace_back([this] {
                 while (true) {
-                    std::function<void()> task;
-                    {
+                    std::function<void()> task; {
                         std::unique_lock<std::mutex> lock(queueMutex);
                         condition.wait(lock, [this] { return stop || !tasks.empty(); });
                         if (stop && tasks.empty())
@@ -73,13 +75,12 @@ public:
 
     template<class F, class... Args>
     auto enqueue(F &&f, Args &&... args)
-    -> std::future<typename std::result_of<F(Args...)>::type> {
+        -> std::future<typename std::result_of<F(Args...)>::type> {
         using return_type = typename std::result_of<F(Args...)>::type;
-        auto task = std::make_shared<std::packaged_task<return_type()>>(
-                std::bind(std::forward<F>(f), std::forward<Args>(args)...)
+        auto task = std::make_shared<std::packaged_task<return_type()> >(
+            std::bind(std::forward<F>(f), std::forward<Args>(args)...)
         );
-        std::future<return_type> res = task->get_future();
-        {
+        std::future<return_type> res = task->get_future(); {
             std::unique_lock<std::mutex> lock(queueMutex);
             if (stop)
                 throw std::runtime_error("enqueue on stopped ThreadPool");
@@ -89,8 +90,7 @@ public:
         return res;
     }
 
-    ~ThreadPool() {
-        {
+    ~ThreadPool() { {
             std::unique_lock<std::mutex> lock(queueMutex);
             stop = true;
         }
@@ -100,8 +100,8 @@ public:
     }
 
 private:
-    std::vector<std::thread> workers;
-    std::queue<std::function<void()>> tasks;
+    std::vector<std::thread> workers{};
+    std::queue<std::function<void()> > tasks{};
     std::mutex queueMutex;
     std::condition_variable condition;
     bool stop;

@@ -20,8 +20,11 @@ tokenizer1 = BertTokenizerFlash(vocab_file, do_lower_case=False)
 tokenizer2 = BertTokenizer(vocab_file, do_lower_case=False, clean_up_tokenization_spaces=True)
 
 for title in titles:
-    ids1 = tokenizer1(title, max_length=300, padding="longest")
+    ids1 = tokenizer1(title, max_length=300, padding="longest").input_ids
     ids2 = tokenizer2(title, max_length=300, padding="longest").input_ids
     print(title)
     print(ids1)
     print(ids2)
+
+    tokens = tokenizer1(title, padding="longest", max_length=300, return_tensors="np", truncation=True)
+    print(tokens.input_ids[0].tolist())

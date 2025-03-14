@@ -54,8 +54,10 @@ class BertTokenizerFlash:
             input_ids = [self.tokenizer.encode(text, padding, max_length)]
         elif isinstance(text, list):
             input_ids = self.tokenizer.batch_encode(text, padding, max_length)
+        else:
+            raise ValueError("text must be str or list[str].")
         if return_tensors == "np":
-            input_ids = np.array(input_ids)
+            input_ids = np.asarray(input_ids)
         return BatchEncoding(input_ids, return_attention_mask=return_attention_mask,
                              return_token_type_ids=return_token_type_ids)
 

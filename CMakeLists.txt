@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-set(PROJECT_VERSION_STR 1.0.1)
+set(PROJECT_VERSION_STR 1.0.2)
 
 project(flash_tokenizer VERSION ${PROJECT_VERSION_STR})
 set(CMAKE_CXX_STANDARD 17)
@@ -36,11 +36,11 @@ set(SRC_FILES src/bert_tokenizer.cpp)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     # -fstrict-aliasing -mtune=native
-    set(COMPILE_OPTIONS -O3  -funroll-loops)
+    set(COMPILE_OPTIONS -Ofast -funroll-loops)
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     set(COMPILE_OPTIONS -O3 -funroll-loops -ffast-math)
 elseif (MSVC)
-    set(COMPILE_OPTIONS /O2)
+    set(COMPILE_OPTIONS /O2 /W1 /GL /Ot /Zc:__cplusplus)
 endif ()
 
 

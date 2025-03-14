@@ -27,4 +27,6 @@ static void separate_line(int n = 50) {
     std::cout << s << std::endl;
 }
 
+static int g_1 = 0;
+static int g_2 = 0;
 #endif //DEBUGGING_H

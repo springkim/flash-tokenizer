@@ -16,9 +16,9 @@
 #include "env.h"
 
 //#define DEEPCT
-#define  KCBERT_BASE
+//#define  KCBERT_BASE
 //#define DEEPCT_KRBERT
-//#define SPLADE
+#define SPLADE
 
 //#define MP 256
 
@@ -88,9 +88,9 @@ std::vector<int> parseNumbersFromString(const std::string &input) {
     return numbers;
 }
 
-deque<string> load_titles() {
+vector<string> load_titles() {
     std::fstream fin(TEXTS_PATH, std::ios::in);
-    std::deque<std::string> lines;
+    std::vector<std::string> lines;
     std::string line;
     while (getline(fin, line)) {
         if (!line.empty() && (line.back() == '\n' || line.back() == '\r'))
@@ -102,9 +102,9 @@ deque<string> load_titles() {
     return lines;
 }
 
-deque<vector<int> > load_gt() {
+vector<vector<int> > load_gt() {
     std::fstream fin(IDS_PATH, std::ios::in);
-    std::deque<std::vector<int> > gts;
+    std::vector<std::vector<int> > gts;
     std::string gt;
     while (std::getline(fin, gt)) {
         gts.push_back(parseNumbersFromString(gt));
@@ -122,10 +122,10 @@ void test() {
     auto texts = load_titles();
     auto gts = load_gt();
 #else
-    std::future<std::deque<std::string> > titles_future =
+    std::future<std::vector<std::string> > titles_future =
             std::async(std::launch::async, load_titles);
 
-    std::future<std::deque<std::vector<int> > > gts_future =
+    std::future<std::vector<std::vector<int> > > gts_future =
             std::async(std::launch::async, load_gt);
     auto texts = titles_future.get();
     auto gts = gts_future.get();
@@ -209,7 +209,11 @@ void simple_test() {
 int main() {
     std::ios::sync_with_stdio(false);
     cout << cpp_env() << endl;
+
+    cout << std::thread::hardware_concurrency() << endl;
     //simple_test();
     test();
+
+    cout << g_1 << "\t" << g_2 << endl;
     return 0;
 }
