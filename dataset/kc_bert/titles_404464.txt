@@ -1,0 +1,4 @@
+hello world
+testing cuda implementation
+this is a sample text
+bert tokenizer test
