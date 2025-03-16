@@ -3,110 +3,244 @@
 #include <sstream>
 #include <vector>
 #include <string>
-#include <regex>
-#include <unordered_map>
 #include <algorithm>
-#include <cctype>
 #include <cstdlib>
+#include <numeric>
 #include <chrono>
-#include <fstream>
+#include <string>
+#include <thread>
+#include <future>
+#include "timer.h"
+
 #include "bert_tokenizer.h"
 #include "cuda_tokenizer.h"
+#include "env.h"
+
+//#define DEEPCT
+#define  KCBERT_BASE
+//#define DEEPCT_KRBERT
+//#define SPLADE
+
+//#define MP 256
+
+#ifdef KCBERT_BASE
+#define TEXTS_PATH "../dataset/kcbert_base/text_10M.txt"
+#define IDS_PATH "../dataset/kcbert_base/text_10M_gt.txt"
+#define VOCAB_PATH "../dataset/kcbert_base/vocab_kcbert_base.txt"
+#define MAX_LENGTH 300
+#define DO_LOWER false
+using TokenizerClass = FlashBertTokenizer;
+#endif
+
+#ifdef DEEPCT
+#define TEXTS_PATH "../dataset/deepct/titles_404464.txt"
+#define IDS_PATH "../dataset/deepct/gt_404464.txt"
+#define VOCAB_PATH "../dataset/deepct/vocab_char_16424.txt"
+#define MAX_LENGTH 256
+#define DO_LOWER true
+using TokenizerClass = FlashBertTokenizer;
+#endif
+
+#ifdef DEEPCT_KRBERT
+#define TEXTS_PATH "../dataset/deepct_kobert/titles_404464.txt"
+#define IDS_PATH "../dataset/deepct_kobert/titles_404464_ids.txt"
+#define VOCAB_PATH "../dataset/deepct_kobert/vocab_char_16424.txt"
+#define MAX_LENGTH 256
+#define DO_LOWER true
+using TokenizerClass = FlashBertTokenizerBidirectional;
+#endif
+
+#ifdef SPLADE
+#define TEXTS_PATH "../dataset/splade/titles_404464.txt"
+#define IDS_PATH "../dataset/splade/titles_404464_gt.txt"
+#define VOCAB_PATH "../dataset/splade/vocab.txt"
+#define MAX_LENGTH 512
+#define DO_LOWER false
+using TokenizerClass = FlashBertTokenizer;
+#endif
+
+using namespace std;
 
 std::vector<int> parseNumbersFromString(const std::string &input) {
     std::vector<int> numbers;
-    std::stringstream ss(input);
-
-    char c;
-    ss >> c;
-
-    int num;
-    while (ss >> num) {
-        numbers.push_back(num);
-        ss >> c;
-        if (c == ']') break;
+    numbers.reserve(100);
+    const char *str = input.c_str();
+    const char *end = str + input.length();
+    while (str < end && *str != '[') str++;
+    if (str < end) str++;
+    while (str < end) {
+        while (str < end && (*str < '0' || *str > '9') && *str != '-') {
+            if (*str == ']') return numbers;
+            str++;
+        }
+        if (str >= end) break;
+        bool negative = false;
+        if (*str == '-') {
+            negative = true;
+            str++;
+        }
+        int num = 0;
+        while (str < end && *str >= '0' && *str <= '9') {
+            num = num * 10 + (*str - '0');
+            str++;
+        }
+        numbers.push_back(negative ? -num : num);
     }
-
     return numbers;
 }
 
-
-
-
-int main() {
-    std::ios::sync_with_stdio(false);
-
-    // Load data
-    std::fstream fin("/home/ubuntu/repos/flash-tokenizer/dataset/kc_bert/titles_404464.txt", std::ios::in);
+vector<string> load_titles() {
+    std::fstream fin(TEXTS_PATH, std::ios::in);
     std::vector<std::string> lines;
     std::string line;
-    while (std::getline(fin, line)) {
+    while (getline(fin, line)) {
+        if (!line.empty() && (line.back() == '\n' || line.back() == '\r'))
+            line.pop_back();
         lines.push_back(line);
     }
     fin.close();
     std::cout << "Data loaded!!" << std::endl;
+    return lines;
+}
 
-    fin.open("/home/ubuntu/repos/flash-tokenizer/dataset/kc_bert/gt_404464.txt", std::ios::in);
-    std::vector<std::vector<int>> gts;
+vector<vector<int> > load_gt() {
+    std::fstream fin(IDS_PATH, std::ios::in);
+    std::vector<std::vector<int> > gts;
     std::string gt;
     while (std::getline(fin, gt)) {
         gts.push_back(parseNumbersFromString(gt));
     }
     fin.close();
     std::cout << "GT loaded!!" << std::endl;
+    return gts;
+}
 
+
+void test() {
+#define LOAD_PARALLEL 1
+    Timer::Tick("LoadDataset");
+#if LOAD_PARALLEL == 0
+    auto texts = load_titles();
+    auto gts = load_gt();
+#else
+    std::future<std::vector<std::string> > titles_future =
+            std::async(std::launch::async, load_titles);
+
+    std::future<std::vector<std::vector<int> > > gts_future =
+            std::async(std::launch::async, load_gt);
+    auto texts = titles_future.get();
+    auto gts = gts_future.get();
+#endif
+    Timer::Tock("LoadDataset");
+    cout << "Loading: " << Timer::Watch("LoadDataset").accu << endl;
+
+
+    TokenizerClass tokenizer(VOCAB_PATH, DO_LOWER);
     std::chrono::system_clock::time_point t_beg, t_end;
-    std::chrono::duration<double> diff;
+    std::chrono::duration<double> diff{};
 
-    // Run the original CPU implementation for baseline
-    FlashBertTokenizer cpu_tokenizer("/home/ubuntu/repos/flash-tokenizer/dataset/kc_bert/vocab_char_16424.txt", true);
-    
     t_beg = std::chrono::system_clock::now();
-    int cpu_correct = 0;
-    long long int cpu_total = 0;
-    for (int i = 0; i < lines.size(); i++) {
-        auto ids = cpu_tokenizer(lines[i]);
-        if (ids == gts[i]) {
-            cpu_correct += 1;
+
+    size_t correct = 0;
+
+#if defined(MP) && MP!=0
+    cout << "BatchedEncoding(Multi Processing)" << endl;
+    vector<vector<string> > titles;
+    vector<vector<vector<int> > > gts_group;
+    vector<string> chunk;
+    vector<vector<int> > gt_chunk;
+    for (size_t i = 0; i < texts.size(); i++) {
+        chunk.push_back(texts[i]);
+        gt_chunk.push_back(gts[i]);
+        if (chunk.size() == MP) {
+            titles.push_back(chunk);
+            chunk.clear();
+            gts_group.push_back(gt_chunk);
+            gt_chunk.clear();
         }
-        cpu_total += ids.size();
     }
+    gts_group.push_back(gt_chunk);
+    titles.push_back(chunk);
+    for (size_t i = 0; i < titles.size(); i++) {
+        auto ids = tokenizer.batch_encode(titles[i], "longest", MAX_LENGTH);
+        for (size_t j = 0; j < ids.size(); j++) {
+            if (ids[j] == gts_group[i][j]) {
+                correct += 1;
+            }
+        }
+    }
+#else
+    for (size_t i = 0; i < texts.size(); i++) {
+        auto ids = tokenizer.encode(texts[i], "longest", MAX_LENGTH);
+        correct += ids == gts[i];
+    }
+#endif
+
+
     t_end = std::chrono::system_clock::now();
     diff = t_end - t_beg;
-    auto cpu_elapsed_time = diff.count();
-    std::cout << "CPU Implementation:" << std::endl;
-    std::cout << cpu_elapsed_time << " seconds" << std::endl;
-    std::cout << lines.size() << std::endl;
-    std::cout << static_cast<double>(cpu_correct) * 100.0 / lines.size() << " % Accuracy" << std::endl;
-    std::cout << lines.size() / cpu_elapsed_time << " RPS" << std::endl;
+    auto elapsed_time = diff.count();
+    std::cout << elapsed_time << " seconds" << "\t";
+
+
+    std::cout << texts.size() << "\t";
+    std::cout << static_cast<double>(correct) * 100.0 / texts.size() << " % Accuracy" << std::endl;
+    std::cout << static_cast<double>(texts.size()) / elapsed_time << " RPS" << std::endl;
+    std::cout << "--------------" << std::endl;
     
     // Run the CUDA implementation
-    CudaTokenizer cuda_tokenizer("/home/ubuntu/repos/flash-tokenizer/dataset/kc_bert/vocab_char_16424.txt");
+    std::cout << "\nCUDA Implementation:" << std::endl;
+    CudaTokenizer cuda_tokenizer(VOCAB_PATH);
     
     t_beg = std::chrono::system_clock::now();
-    int cuda_correct = 0;
-    long long int cuda_total = 0;
-    for (int i = 0; i < lines.size(); i++) {
-        auto ids = cuda_tokenizer.tokenize(lines[i]);
+    size_t cuda_correct = 0;
+    for (size_t i = 0; i < texts.size(); i++) {
+        auto ids = cuda_tokenizer.tokenize(texts[i]);
         // Note: CUDA implementation is simplified, so accuracy will be lower
         if (ids.size() == gts[i].size()) {
             cuda_correct += 1;
         }
-        cuda_total += ids.size();
     }
     t_end = std::chrono::system_clock::now();
     diff = t_end - t_beg;
     auto cuda_elapsed_time = diff.count();
-    std::cout << "\nCUDA Implementation:" << std::endl;
-    std::cout << cuda_elapsed_time << " seconds" << std::endl;
-    std::cout << lines.size() << std::endl;
-    std::cout << static_cast<double>(cuda_correct) * 100.0 / lines.size() << " % Accuracy" << std::endl;
-    std::cout << lines.size() / cuda_elapsed_time << " RPS" << std::endl;
+    std::cout << cuda_elapsed_time << " seconds" << "\t";
+    std::cout << texts.size() << "\t";
+    std::cout << static_cast<double>(cuda_correct) * 100.0 / texts.size() << " % Accuracy" << std::endl;
+    std::cout << static_cast<double>(texts.size()) / cuda_elapsed_time << " RPS" << std::endl;
     
     // Performance comparison
-    double speedup = cpu_elapsed_time / cuda_elapsed_time;
+    double speedup = elapsed_time / cuda_elapsed_time;
     std::cout << "\nPerformance Comparison:" << std::endl;
     std::cout << "CUDA Speedup: " << speedup << "x" << std::endl;
+}
 
+
+void simple_test() {
+    //wstring s=L"🙆‍";
+
+
+    //string s = "김시온 대표 선경 인테리어 실무 시작, 미국 샌프란시스코 잠시 생활 2012년 한국 돌아와 스페이스 필모어 설립했다.";
+    string s = "이것은 놀이공원인가, 호텔인가'…국내 최초 호텔에 테마파크 들어선다";
+    // cout << convert_and_reverse(s) << endl;
+    auto tokenizer = FlashBertTokenizer(VOCAB_PATH, false);
+    auto ids = tokenizer.encode(s, "longest", 512);
+    for (auto &e: ids) {
+        cout << e << ", ";
+    }
+    cout << endl;
+    exit(0);
+}
+
+
+int main() {
+    std::ios::sync_with_stdio(false);
+    cout << cpp_env() << endl;
+
+    cout << std::thread::hardware_concurrency() << endl;
+    //simple_test();
+    test();
+
+    cout << g_1 << "\t" << g_2 << endl;
     return 0;
 }
