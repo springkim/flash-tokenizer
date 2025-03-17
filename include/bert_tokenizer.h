@@ -257,6 +257,7 @@ public:
     }
 
     std::vector<std::vector<int> > batch_encode(const std::vector<std::string> &texts, const std::string &padding, int max_length) override {
+#ifndef _OPENMP
         if (!this->pool) {
             this->pool = std::make_unique<ThreadPool>();
         }
@@ -278,6 +279,16 @@ public:
         }
 
         return input_ids;
+#else
+        std::vector<std::vector<int>> input_ids(texts.size());
+
+#pragma omp parallel for
+        for (size_t i = 0; i < texts.size(); ++i) {
+            input_ids[i] = this->tokenizer_ids<STRING_LIST>(texts[i], max_length, padding);
+        }
+
+        return input_ids;
+#endif
     }
 };
 

@@ -16,7 +16,7 @@
 #include "env.h"
 
 
-#define DATASET_NUMBER 2
+#define DATASET_NUMBER 3
 
 #if DATASET_NUMBER == 1
 #define KCBERT_BASE
