@@ -4,7 +4,7 @@
     <img alt="FlashTokenizer" src="https://github.com/NLPOptimize/flash-tokenizer/blob/main/assets/FlashTokenizer_main_light.png?raw=true" width=60%>
   </picture>
 </p>
-<h1 style="color: #03C75A; text-align: center;">
+<h1 align="center">
 The world's fastest tokenizer library!
 </h1>
 
