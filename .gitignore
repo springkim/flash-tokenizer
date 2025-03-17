@@ -38,10 +38,9 @@ dist/
 build/
 src/flash_tokenizer.egg-info/
 dataset/*/*.txt
-package_build/miniconda
+package_build/miniconda_*
 package_build/.conda
 package_build/Library
 package_build/.cache
 package_build/.nv
 secret.txt
-pypirc

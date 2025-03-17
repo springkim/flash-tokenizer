@@ -32,7 +32,7 @@
 #define SPLADE
 #endif
 
-#define MP 32
+#define MP 1
 
 #ifdef KCBERT_BASE
 #define TEXTS_PATH "../dataset/kcbert_base/text_10M.txt"
@@ -238,29 +238,9 @@ void test() {
 }
 
 
-void simple_test() {
-    //wstring s=L"🙆‍";
-
-
-    //string s = "김시온 대표 선경 인테리어 실무 시작, 미국 샌프란시스코 잠시 생활 2012년 한국 돌아와 스페이스 필모어 설립했다.";
-    string s = "이것은 놀이공원인가, 호텔인가'…국내 최초 호텔에 테마파크 들어선다";
-    // cout << convert_and_reverse(s) << endl;
-    auto tokenizer = FlashBertTokenizer(VOCAB_PATH, false);
-    auto ids = tokenizer.encode(s, "longest", 512);
-    for (auto &e: ids) {
-        cout << e << ", ";
-    }
-    cout << endl;
-    exit(0);
-}
-
-
 int main() {
     std::ios::sync_with_stdio(false);
     cout << cpp_env() << endl;
-
-    cout << std::thread::hardware_concurrency() << endl;
-    //simple_test();
     test();
 
     cout << g_1 << "\t" << g_2 << endl;

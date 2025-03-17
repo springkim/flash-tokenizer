@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 export HOME=$(pwd)
 mkdir -p miniconda
-wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh
+wget https://repo.anaconda.com/miniconda/Miniconda3-py312_24.1.2-0-Linux-x86_64.sh -O /tmp/miniconda.sh
 bash /tmp/miniconda.sh -b -u -p ./miniconda_linux
 
 python_versions=("3.9" "3.10" "3.11" "3.12")
