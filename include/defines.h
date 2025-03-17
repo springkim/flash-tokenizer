@@ -42,7 +42,7 @@
 #include <list>
 #include <deque>
 #include <string>
-#include <execution>
+
 #include <unordered_set>
 #include "allocator.h"
 
@@ -98,8 +98,9 @@ using INT_LIST = std::vector<int>;
 
 
 #if defined(_MSC_VER) || defined(__clang__)
-#define EXECUTION std::execution::seq
+#define EXECUTION
 #else
+#include <execution>
 #define EXECUTION std::execution::par
 #endif
 

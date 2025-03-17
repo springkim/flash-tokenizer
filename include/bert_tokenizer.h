@@ -54,7 +54,6 @@
 #include <functional>
 #include <thread>
 #include<future>
-#include <execution>
 #include "robin_hood.h"
 #include "env.h"
 #include "debugging.h"

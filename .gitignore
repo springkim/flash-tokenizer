@@ -44,3 +44,4 @@ package_build/Library
 package_build/.cache
 package_build/.nv
 secret.txt
+pypirc

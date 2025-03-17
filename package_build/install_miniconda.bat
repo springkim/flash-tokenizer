@@ -1,7 +1,7 @@
 @echo off
 setlocal enabledelayedexpansion
 
-set "INSTALL_DIR=%cd%\miniconda"
+set "INSTALL_DIR=%cd%\miniconda_win"
 curl https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe -o miniconda.exe
 start /wait "" miniconda.exe /S /D=%INSTALL_DIR%
 del miniconda.exe

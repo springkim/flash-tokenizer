@@ -27,3 +27,31 @@ sudo apt install python3 python3-pip -y
 ```bash
 brew install dosbox
 ```
+
+##Windows
+docker run -it -v "C:/Users/spring/Documents/git_NLPOptimize/flash-tokenize:/io" quay.io/pypa/manylinux2014_x86_64 bash
+```
+curl -L "https://www.python.org/ftp/python/3.12.1/Python-3.12.1.tgz" -o Python-3.12.1.tgz
+tar -xzvf Python-3.12.1.tgz
+cd Python-3.12.1
+./configure
+./configure --enable-optimizations
+make
+```
+
+## manylinux
+
+docker pull quay.io/pypa/manylinux2014_x86_64
+
+docker run -it --name manylinux -v $(pwd):/io quay.io/pypa/manylinux2014_x86_64 /bin/bash
+yum install python3 python3-pip wget git vim curl -y
+
+
+
+docker run --rm -v $(pwd):/io quay.io/pypa/manylinux2014_x86_64 bash -c "\
+cd /io && \
+curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && \
+python get-pip.py && \
+python -m pip install setuptools wheel build pybind11 && \
+python setup.py build && \
+auditwheel repair dist/*.whl -w wheelhouse/"
