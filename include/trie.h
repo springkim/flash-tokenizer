@@ -35,8 +35,8 @@
 // the use of this software, even if advised of the possibility of such damage.
 //
 #pragma once
-#ifndef MnJkVXCLgbBkakBNQhFcLxSnAZKeHLnGaMCxdFWCGDJ21qW5LAJA3R4Th2d3Uy48
-#define MnJkVXCLgbBkakBNQhFcLxSnAZKeHLnGaMCxdFWCGDJ21qW5LAJA3R4Th2d3Uy48
+#ifndef TRSZTUUWWNKHJCSXLLTZMWDCJWTELKQRTZELVMMUKFPSGUDNATGJJPDLUMQFPB
+#define TRSZTUUWWNKHJCSXLLTZMWDCJWTELKQRTZELVMMUKFPSGUDNATGJJPDLUMQFPB
 
 #include <vector>
 #include <array>
@@ -47,7 +47,7 @@ class Trie {
 public:
     struct Node {
         int vocab_index;
-        std::array<int, 256> children;
+        std::array<int, 256> children{};
 
         Node() : vocab_index(-1) {
             children.fill(-1);
@@ -60,7 +60,7 @@ protected:
 public:
     Trie() {
         pool.reserve(1024);
-        pool.push_back(Node());
+        pool.emplace_back();
     }
 
     void insert(const std::string &word, int index) {
@@ -70,7 +70,7 @@ public:
             if (child == -1) {
                 child = pool.size();
                 this->pool[current].children[c] = child;
-                this->pool.push_back(Node());
+                this->pool.emplace_back();
             }
             current = child;
         }

@@ -1,9 +1,5 @@
-//
-// Created by SPRING on 2025. 3. 12..
-//
-
-#ifndef DEBUGGING_H
-#define DEBUGGING_H
+#ifndef KZWRLWKYZZCSSRNDGYLRHQNKKMKVLWSJXWUPGGRQBZDYFQYMDYEELPLLEABYBA
+#define KZWRLWKYZZCSSRNDGYLRHQNKKMKVLWSJXWUPGGRQBZDYFQYMDYEELPLLEABYBA
 #include<iostream>
 
 template<template<typename... Args> class Container, typename T>

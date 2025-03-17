@@ -1,4 +1,4 @@
-## Python
+x## Python
 
 Windows, MacOS는 아래 python 공식 홈페이지에서 설치한다.
 
@@ -24,4 +24,6 @@ sudo apt install python3 python3-pip -y
 어떻게 설치를 하던 `/usr/bin/python3` 에 python이 있으면 상관없다.
 
 
-
+```bash
+brew install dosbox
+```

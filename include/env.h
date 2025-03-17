@@ -78,6 +78,7 @@ static std::string cpp_env(const std::string &version = "dev") {
     std::cout << "Intel(" << __INTEL_COMPILER << ")";
 #endif
     oss << os << ", " << compiler_version.str() << " - " << arch;
+
 #ifdef _DEBUG
     oss << "(Debug)";
 #else

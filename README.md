@@ -55,6 +55,7 @@ FlashTokenizer is a high-performance tokenizer implementation in C++ of the Bert
 > [!IMPORTANT]  
 > **[Mar 14 2025]** The performance of the `WordPieceTokenizer` and `WordPieceBackwordTokenizer` has been improved using [Trie](https://en.wikipedia.org/wiki/Trie), which was introduced in [Fast WordPiece Tokenization](https://arxiv.org/abs/2012.15524).
 > Using `FastPoolAllocator` in `std::list` improves performance in SingleEncoding, but it is not thread-safe, so `std::list<std::string>` is used as is in BatchEncoding. In BatchEncoding, `OPENMP` is completely removed and only `std::thread` is used.
+> 
 > **[Mar 10 2025]** Performance improvements through faster token mapping with robin_hood and memory copy minimization with **std::list**.
 >
 > | Container   | Elapsed Time | Max RPS | Description                                                  |
@@ -99,7 +100,7 @@ FlashTokenizer is a high-performance tokenizer implementation in C++ of the Bert
 ### Requirements
 
  * g++ / clang++ / MSVC
- * python3.9 ~ 3.13
+ * python3.9 ~ 3.12
 
 ### Install from [PIP](https://pypi.org/project/flash-tokenizer/)
 ```bash

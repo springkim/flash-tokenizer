@@ -35,8 +35,8 @@
 // the use of this software, even if advised of the possibility of such damage.
 //
 #pragma once
-#ifndef FLASHTOKENIZER_BERT_TOKENIZER_H
-#define FLASHTOKENIZER_BERT_TOKENIZER_H
+#ifndef MPNVTDXZKUBGNRMLPKGYLBWAARLLHQUSXVSQJDZTBGHQEJXGPMTNHHDFCVLMMU
+#define MPNVTDXZKUBGNRMLPKGYLBWAARLLHQUSXVSQJDZTBGHQEJXGPMTNHHDFCVLMMU
 
 #include <iostream>
 #include <fstream>
@@ -85,7 +85,6 @@ protected:
     const BasicTokenizer basic;
     const WordpieceTokenizer wordpiece;
     std::string _version_ = "Unknown";
-
 public:
     explicit FlashBertTokenizer(const std::string &vocab_file, bool do_lower_case = true)
         : vocab(vocab_file), basic(do_lower_case),
@@ -151,7 +150,7 @@ public:
     [[nodiscard]] std::vector<std::string> convert_ids_to_tokens(const std::vector<int> &ids) const {
         std::vector<std::string> tokens;
         tokens.reserve(ids.size());
-        for (int id: ids) {
+        for (const int id: ids) {
             tokens.push_back(
                 (id >= 0 && id < static_cast<int>(this->vocab.tokens.size())) ? this->vocab.tokens[id] : this->UNK);
         }

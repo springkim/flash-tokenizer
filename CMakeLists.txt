@@ -35,10 +35,11 @@ option(BUILD_PYTHON_MODULE "Build the Python module" ON)
 set(SRC_FILES src/bert_tokenizer.cpp)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    # -fstrict-aliasing -mtune=native
-    set(COMPILE_OPTIONS -Ofast -funroll-loops)
+    set(COMPILE_OPTIONS -Ofast -funroll-loops -floop-nest-optimize)
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    set(COMPILE_OPTIONS -O3 -funroll-loops -ffast-math)
+    add_compile_options(-Wno-deprecated-declarations)
+    set(COMPILE_OPTIONS -O3 -flto -funroll-loops
+            -ffast-math -fomit-frame-pointer -fvectorize -fslp-vectorize -mllvm -polly)
 elseif (MSVC)
     set(COMPILE_OPTIONS /O2 /W1 /GL /Ot /Zc:__cplusplus)
 endif ()
