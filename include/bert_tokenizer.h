@@ -35,8 +35,8 @@
 // the use of this software, even if advised of the possibility of such damage.
 //
 #pragma once
-#ifndef FLASHTOKENIZER_BERT_TOKENIZER_H
-#define FLASHTOKENIZER_BERT_TOKENIZER_H
+#ifndef MPNVTDXZKUBGNRMLPKGYLBWAARLLHQUSXVSQJDZTBGHQEJXGPMTNHHDFCVLMMU
+#define MPNVTDXZKUBGNRMLPKGYLBWAARLLHQUSXVSQJDZTBGHQEJXGPMTNHHDFCVLMMU
 
 #include <iostream>
 #include <fstream>
@@ -144,14 +144,15 @@ public:
     }
 
     [[nodiscard]] std::vector<int>
-    convert_tokens_to_ids(const std::vector<std::string>  &tokens, int max_length = -1) const {
+
+    convert_tokens_to_ids(const std::vector<std::string> &tokens, int max_length = -1) const {
         return convert_by_vocab(vocab, tokens, max_length);
     }
 
     [[nodiscard]] std::vector<std::string> convert_ids_to_tokens(const std::vector<int> &ids) const {
         std::vector<std::string> tokens;
         tokens.reserve(ids.size());
-        for (int id: ids) {
+        for (const int id: ids) {
             tokens.push_back(
                 (id >= 0 && id < static_cast<int>(this->vocab.tokens.size())) ? this->vocab.tokens[id] : this->UNK);
         }
@@ -163,6 +164,7 @@ public:
     }
 
     virtual std::vector<std::vector<int> > batch_encode(const std::vector<std::string> &texts, const std::string &padding, int max_length) {
+#ifndef _OPENMP
         if (!this->pool) {
             this->pool = std::make_unique<ThreadPool>();
         }
@@ -184,6 +186,16 @@ public:
         }
 
         return input_ids;
+#else
+        std::vector<std::vector<int>> input_ids(texts.size());
+
+#pragma omp parallel for
+        for (size_t i = 0; i < texts.size(); ++i) {
+            input_ids[i] = this->tokenizer_ids<STRING_LIST>(texts[i], max_length, padding);
+        }
+
+        return input_ids;
+#endif
     }
 };
 
@@ -245,6 +257,7 @@ public:
     }
 
     std::vector<std::vector<int> > batch_encode(const std::vector<std::string> &texts, const std::string &padding, int max_length) override {
+#ifndef _OPENMP
         if (!this->pool) {
             this->pool = std::make_unique<ThreadPool>();
         }
@@ -266,6 +279,16 @@ public:
         }
 
         return input_ids;
+#else
+        std::vector<std::vector<int>> input_ids(texts.size());
+
+#pragma omp parallel for
+        for (size_t i = 0; i < texts.size(); ++i) {
+            input_ids[i] = this->tokenizer_ids<STRING_LIST>(texts[i], max_length, padding);
+        }
+
+        return input_ids;
+#endif
     }
 };
 

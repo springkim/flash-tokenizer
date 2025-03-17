@@ -35,17 +35,16 @@
 // the use of this software, even if advised of the possibility of such damage.
 //
 #pragma once
-#ifndef RPuJgxZkjScv9hYfPRA9iQ19AFzC9Ti4V9HPiSpACxwZdy6HyjCGRek7aP6Udrhp
-#define RPuJgxZkjScv9hYfPRA9iQ19AFzC9Ti4V9HPiSpACxwZdy6HyjCGRek7aP6Udrhp
+#ifndef FTNACWLRUCDTKQHXMLSYPEJZLUZBRVCVUMSUUPTWEMUVFVKHXLBQEYZYDMCPWT
+#define FTNACWLRUCDTKQHXMLSYPEJZLUZBRVCVUMSUUPTWEMUVFVKHXLBQEYZYDMCPWT
 #include "config.h"
-#include<vector>
-#include<list>
-#include<deque>
-#include<string>
-#include"allocator.h"
-
-
-
+#include <vector>
+#include <list>
+#include <deque>
+#include <string>
+#include <execution>
+#include <unordered_set>
+#include "allocator.h"
 
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -56,7 +55,14 @@
 #define SELECT_ANY  __attribute__((weak))
 #endif
 
-
+#if defined(_WIN32) || defined(_WIN64)
+#if defined(__GNUC__)
+#ifdef _OPENMP
+#include "omp.h"
+#else
+#endif
+#endif
+#endif
 
 #if LIST == 1
 using STRING_LIST = std::list<std::string>;
@@ -71,8 +77,6 @@ using STRING_LIST_FAST = std::deque<std::string, FastPoolAllocator<std::string> 
 using STRING_LIST = std::vector<std::string>;
 #define CONCAT(A, B) std::move((B).begin(),(B).end(),std::back_inserter((A)))
 #endif
-
-
 
 
 #if LIST_IDS == 1
@@ -91,4 +95,13 @@ using INT_LIST = std::vector<int>;
 #define INIT(A, B) (A).reserve((B))
 #define IDS_RETURN(A)   (A)
 #endif
+
+
+#if defined(_MSC_VER) || defined(__clang__)
+#define EXECUTION std::execution::seq
+#else
+#define EXECUTION std::execution::par
+#endif
+
+
 #endif
