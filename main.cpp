@@ -19,12 +19,16 @@
 #define DATASET_NUMBER 3
 
 #if DATASET_NUMBER == 1
+// KCBERT_BASE
 #define KCBERT_BASE
 #elif DATASET_NUMBER == 2
+//DEEPCT
 #define DEEPCT
 #elif DATASET_NUMBER == 3
+//DEEPCT_KRBERT
 #define DEEPCT_KRBERT
 #elif DATASET_NUMBER == 4
+//SPLADE
 #define SPLADE
 #endif
 
