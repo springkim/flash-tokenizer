@@ -16,7 +16,7 @@
 #include "env.h"
 
 
-#define DATASET_NUMBER 3
+#define DATASET_NUMBER 6
 
 #if DATASET_NUMBER == 1
 // KCBERT_BASE
@@ -30,6 +30,10 @@
 #elif DATASET_NUMBER == 4
 //SPLADE
 #define SPLADE
+#elif DATASET_NUMBER == 5
+#define SPLADE_NORMAL
+#elif DATASET_NUMBER == 6
+#define SPLADE_UNIFORM
 #endif
 
 #define MP 1
@@ -72,6 +76,26 @@ std::string DATASET_NAME = "deepct(bidirectional)";
 #define DO_LOWER false
 using TokenizerClass = FlashBertTokenizer;
 std::string DATASET_NAME="splade";
+#endif
+
+#ifdef SPLADE_NORMAL
+#define TEXTS_PATH "../dataset/splade/calibration_normal.txt"
+#define IDS_PATH "../dataset/splade/calibration_normal_gt.txt"
+#define VOCAB_PATH "../dataset/splade/vocab.txt"
+#define MAX_LENGTH 512
+#define DO_LOWER false
+using TokenizerClass = FlashBertTokenizer;
+std::string DATASET_NAME="splade_normal";
+#endif
+
+#ifdef SPLADE_UNIFORM
+#define TEXTS_PATH "../dataset/splade/calibration_uniform.txt"
+#define IDS_PATH "../dataset/splade/calibration_uniform_gt.txt"
+#define VOCAB_PATH "../dataset/splade/vocab.txt"
+#define MAX_LENGTH 512
+#define DO_LOWER false
+using TokenizerClass = FlashBertTokenizer;
+std::string DATASET_NAME="splade_uniform";
 #endif
 
 using namespace std;
@@ -170,8 +194,8 @@ void test() {
             std::async(std::launch::async, load_gt);
     auto texts = titles_future.get();
     auto gts = gts_future.get();
-
-
+    double accuracy;
+    double min_elapsed_time=std::numeric_limits<double>::max();
 #else
     auto texts = load_titles();
     auto gts = load_gt();
@@ -180,61 +204,65 @@ void test() {
     cout << "Data/GT loaded : " << Timer::Watch("LoadDataset").accu << endl;
     cout << DATASET_NAME << endl;
     TokenizerClass tokenizer(VOCAB_PATH, DO_LOWER);
-    std::chrono::system_clock::time_point t_beg, t_end;
-    std::chrono::duration<double> diff{};
+    for (int testcase=0;testcase<3;testcase++) {
+        std::chrono::system_clock::time_point t_beg, t_end;
+        std::chrono::duration<double> diff{};
 
-    t_beg = std::chrono::system_clock::now();
+        t_beg = std::chrono::system_clock::now();
 
-    size_t correct = 0;
+        size_t correct = 0;
 
 #if MP!=1
-    cout << "BatchedEncoding(Multi Processing)" << " - " << MP << endl;
-    vector<vector<string> > titles;
-    vector<vector<vector<int> > > gts_group;
-    size_t num_chunks = std::ceil((texts.size() + MP - 1.0) / MP);
-    titles.reserve(num_chunks);
-    gts_group.reserve(num_chunks);
-    for (size_t i = 0; i < texts.size(); i += MP) {
-        size_t chunk_size = std::min(MP, static_cast<int>(texts.size() - i));
-        vector<string> title_chunk;
-        vector<vector<int> > gt_chunk;
-        title_chunk.reserve(chunk_size);
-        gt_chunk.reserve(chunk_size);
-        for (size_t j = 0; j < chunk_size; j++) {
-            title_chunk.push_back(std::move(texts[i + j]));
-            gt_chunk.push_back(std::move(gts[i + j]));
+        cout << "BatchedEncoding(Multi Processing)" << " - " << MP << endl;
+        vector<vector<string> > titles;
+        vector<vector<vector<int> > > gts_group;
+        size_t num_chunks = std::ceil((texts.size() + MP - 1.0) / MP);
+        titles.reserve(num_chunks);
+        gts_group.reserve(num_chunks);
+        for (size_t i = 0; i < texts.size(); i += MP) {
+            size_t chunk_size = std::min(MP, static_cast<int>(texts.size() - i));
+            vector<string> title_chunk;
+            vector<vector<int> > gt_chunk;
+            title_chunk.reserve(chunk_size);
+            gt_chunk.reserve(chunk_size);
+            for (size_t j = 0; j < chunk_size; j++) {
+                title_chunk.push_back(std::move(texts[i + j]));
+                gt_chunk.push_back(std::move(gts[i + j]));
+            }
+            titles.push_back(std::move(title_chunk));
+            gts_group.push_back(std::move(gt_chunk));
         }
-        titles.push_back(std::move(title_chunk));
-        gts_group.push_back(std::move(gt_chunk));
-    }
-    for (size_t i = 0; i < titles.size(); i++) {
-        auto ids = tokenizer.batch_encode(titles[i], "longest", MAX_LENGTH);
+        for (size_t i = 0; i < titles.size(); i++) {
+            auto ids = tokenizer.batch_encode(titles[i], "longest", MAX_LENGTH);
 
-        for (size_t j = 0; j < ids.size(); j++) {
-            if (ids[j] == gts_group[i][j]) {
-                correct += 1;
+            for (size_t j = 0; j < ids.size(); j++) {
+                if (ids[j] == gts_group[i][j]) {
+                    correct += 1;
+                }
             }
         }
-    }
 #else
-    cout << "SingleEncoding(Single Thread)" << endl;
-    for (size_t i = 0; i < texts.size(); i++) {
-        auto ids = tokenizer.encode(texts[i], "longest", MAX_LENGTH);
-        correct += ids == gts[i];
-    }
+        cout << "SingleEncoding(Single Thread)" << endl;
+        for (size_t i = 0; i < texts.size(); i++) {
+            auto ids = tokenizer.encode(texts[i], "longest", MAX_LENGTH);
+            correct += ids == gts[i];
+        }
 #endif
 
 
-    t_end = std::chrono::system_clock::now();
-    diff = t_end - t_beg;
-    auto elapsed_time = diff.count();
-    std::cout << elapsed_time << " seconds" << "  |  ";
+        t_end = std::chrono::system_clock::now();
+        diff = t_end - t_beg;
+        auto elapsed_time = diff.count();
+        std::cout << elapsed_time << " seconds" << "  |  ";
 
-
-    std::cout << texts.size() << "  |  ";
-    std::cout << static_cast<double>(correct) * 100.0 / static_cast<double>(texts.size()) << " % Accuracy" << std::endl;
-    std::cout << static_cast<double>(texts.size()) / elapsed_time << " RPS" << std::endl;
-    std::cout << "--------------" << std::endl;
+        min_elapsed_time = std::min(min_elapsed_time, elapsed_time);
+        std::cout << texts.size() << "  |  ";
+        accuracy = static_cast<double>(correct) * 100.0 / static_cast<double>(texts.size());
+        std::cout << accuracy << " % Accuracy" << std::endl;
+        std::cout << static_cast<double>(texts.size()) / elapsed_time << " RPS" << std::endl;
+        std::cout << "--------------" << std::endl;
+    }
+    cout << "|" << DATASET_NAME << "|" << min_elapsed_time << "|" << accuracy << "|" << std::endl;
 }
 
 

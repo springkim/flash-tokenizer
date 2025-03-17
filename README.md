@@ -1,19 +1,17 @@
-
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://github.com/NLPOptimize/flash-tokenizer/blob/main/assets/FlashTokenizer_main_dark.png?raw=true">
     <img alt="FlashTokenizer" src="https://github.com/NLPOptimize/flash-tokenizer/blob/main/assets/FlashTokenizer_main_light.png?raw=true" width=60%>
   </picture>
 </p>
-<h1 align="center">
-Tokenizer Library for LLM Serving
-</h1>
+<h1 style="color: #03C75A; text-align: center;">The world's fastest tokenizer library!</h1>
+
 
 
 ## EFFICIENT AND OPTIMIZED TOKENIZER ENGINE FOR LLM INFERENCE SERVING
 
 
-FlashTokenizer is a high-performance tokenizer implementation in C++ of the BertTokenizer used for LLM inference. It has the highest speed and accuracy of any tokenizer, such as [FlashAttention](https://github.com/Dao-AILab/flash-attention) and [FlashInfer](https://github.com/flashinfer-ai/flashinfer), and is 4-5 times faster than BertTokenizerFast in transformers.
+[FlashTokenizer](https://pypi.org/project/flash-tokenizer/) is a high-performance tokenizer implementation in C++ of the BertTokenizer used for LLM inference. It has the highest speed and accuracy of any tokenizer, such as [FlashAttention](https://github.com/Dao-AILab/flash-attention) and [FlashInfer](https://github.com/flashinfer-ai/flashinfer), and is 4-5 times faster than BertTokenizerFast in transformers.
 
 > [!NOTE]  
 > `FlashBertTokenizer` is 4x faster than `transformers.BertTokenizerFast` and 15.5x faster than `transformers.BertTokenizer`.
@@ -53,45 +51,56 @@ FlashTokenizer is a high-performance tokenizer implementation in C++ of the Bert
 ## News
 
 > [!IMPORTANT]  
-> **[Mar 14 2025]** The performance of the `WordPieceTokenizer` and `WordPieceBackwordTokenizer` has been improved using [Trie](https://en.wikipedia.org/wiki/Trie), which was introduced in [Fast WordPiece Tokenization](https://arxiv.org/abs/2012.15524).
+> **[Mar 18 2025]** Improvements to the accuracy of the BasicTokenizer have improved the overall accuracy and, in particular, produce more accurate results for Unicode input.
+> 
+> |Dataset|ElapsedTime(s)<br> V0.9 ➡️ V1.0|Accuracy(%)<br> V0.9 ➡️ V1.0|Texts|
+> |-|-|-|-|
+> |kcbert_base|26.946 ➡️ 31.4812|99.5839 ➡️ 99.9236|10,000,000|
+> |deepct(w/o bidirectional)|4.95804 ➡️ 7.18554|99.8442 ➡️ 99.7068|404,464|
+> |deepct(bidirectional)|9.64352 ➡️ 12.0492|99.9913 ➡️ 99.8539|404,464|
+> |splade|4.77499 ➡️ 6.05709|99.7715 ➡️ 99.7572|404,464|
+> |splade_normal|8.83308 ➡️ 11.3714|**95.1307** ➡️ **98.7113** 🔺|5,259,200|
+> |splade_uniform|1.05303 ➡️ 1.37461|**94.7277** ➡️ **98.5300** 🔺|435,178|
+>
+>**[Mar 14 2025]** The performance of the `WordPieceTokenizer` and `WordPieceBackwordTokenizer` has been improved using [Trie](https://en.wikipedia.org/wiki/Trie), which was introduced in [Fast WordPiece Tokenization](https://arxiv.org/abs/2012.15524).
 > Using `FastPoolAllocator` in `std::list` improves performance in SingleEncoding, but it is not thread-safe, so `std::list<std::string>` is used as is in BatchEncoding. In BatchEncoding, `OPENMP` is completely removed and only `std::thread` is used.
 > 
 > **[Mar 10 2025]** Performance improvements through faster token mapping with robin_hood and memory copy minimization with **std::list**.
->
-> | Container   | Elapsed Time | Max RPS | Description                                                  |
+> 
+>| Container   | Elapsed Time | Max RPS | Description                                                  |
 > | ----------- | ------------ | ------- | ------------------------------------------------------------ |
->| std::list   | 10.3458      | 39660.5 | When combining containers, std::list is the fastest because it doesn't allocate extra memory and just appends to the end. |
-> | std::deque  | 15.3494      | 26473.1 | Because it is organized in chunks, it requires memory allocation even when combining containers and has the slowest performance due to its low cache hit rather than contiguous memory. |
+> | std::list   | 10.3458      | 39660.5 | When combining containers, std::list is the fastest because it doesn't allocate extra memory and just appends to the end. |
+>| std::deque  | 15.3494      | 26473.1 | Because it is organized in chunks, it requires memory allocation even when combining containers and has the slowest performance due to its low cache hit rather than contiguous memory. |
 > | std::vector | 11.9718      | 33913.3 | It allocates new memory each time when combining containers, but it has a high cache hit for fast performance. |
 > 
 > #### Token Ids Map Table Performance Test.
 > 
->Token and Ids Map used the fastest unordered_flat_map as shown in the test results below.
-> 
->| Map                                                | Elapsed Time(Access) |
-> | -------------------------------------------------- | -------------------- |
->| ✅ robin_hood::unordered_flat_map<std::string, int> | 0.914775             |
-> | robin_hood::unordered_node_map<std::string, int>   | 0.961003             |
->| robin_hood::unordered_map<std::string, int>        | 0.917136             |
-> | std::unordered_map<std::string, int, XXHash>       | 1.1506               |
+> Token and Ids Map used the fastest unordered_flat_map as shown in the test results below.
+>
+> | Map                                                | Elapsed Time(Access) |
+>| -------------------------------------------------- | -------------------- |
+> | ✅ robin_hood::unordered_flat_map<std::string, int> | 0.914775             |
+>| robin_hood::unordered_node_map<std::string, int>   | 0.961003             |
+> | robin_hood::unordered_map<std::string, int>        | 0.917136             |
+>| std::unordered_map<std::string, int, XXHash>       | 1.1506               |
 > | std::unordered_map<std::string, int>               | 1.20015              |
 > 
 > XXHash is implemented as follows.
 > 
 > ```c++
 > #define XXH_STATIC_LINKING_ONLY
->#define XXH_INLINE_ALL
-> #include "xxhash.h"
->struct XXHash {
-> size_t operator()(const std::string &s) const {
->      return XXH3_64bits(s.data(), s.size());
->  }
-> };
->  ```
+> #define XXH_INLINE_ALL
+>#include "xxhash.h"
+> struct XXHash {
+>size_t operator()(const std::string &s) const {
+>   return XXH3_64bits(s.data(), s.size());
+>    }
+>  };
+> ```
+>  
 >    
 >    
->    
-> **[Mar 09 2025]** Completed development of flash-tokenizer for BertTokenizer.
+>    **[Mar 09 2025]** Completed development of flash-tokenizer for BertTokenizer.
 
 
 
@@ -104,7 +113,19 @@ FlashTokenizer is a high-performance tokenizer implementation in C++ of the Bert
 
 ### Install from [PIP](https://pypi.org/project/flash-tokenizer/)
 ```bash
+# Windows(Visual Studio)
 pip install -U flash-tokenizer
+```
+```bash
+# Ubuntu
+sudo apt install gcc g++ make cmake -y
+pip install setuptools wheel build pybind11
+CC=gcc CXX=g++ pip install -U flash-tokenizer
+```
+```bash
+# MacOS
+brew install gcc
+CC=gcc CXX=g++ pip install -U flash-tokenizer
 ```
 
 ### Install from Source

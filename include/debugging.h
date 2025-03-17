@@ -3,7 +3,7 @@
 #include<iostream>
 
 template<template<typename... Args> class Container, typename T>
-void print(Container<T> values) {
+void printd(Container<T> values) {
     for (auto &e: values) {
         std::cout << e << " ";
     }
@@ -11,7 +11,7 @@ void print(Container<T> values) {
 }
 
 template<typename T>
-void print(T value) {
+void printd(T value) {
     std::cout << value << std::endl;
 }
 

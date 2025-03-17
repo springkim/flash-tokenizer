@@ -37,6 +37,9 @@
 #pragma once
 #ifndef FTNACWLRUCDTKQHXMLSYPEJZLUZBRVCVUMSUUPTWEMUVFVKHXLBQEYZYDMCPWT
 #define FTNACWLRUCDTKQHXMLSYPEJZLUZBRVCVUMSUUPTWEMUVFVKHXLBQEYZYDMCPWT
+//#undef _GLIBCXX_HAVE_AT_QUICK_EXIT
+// #undef _GLIBCXX_HAVE_QUICK_EXIT
+// #include<stdlib.h>
 #include "config.h"
 #include <vector>
 #include <list>
@@ -67,7 +70,8 @@
 #if LIST == 1
 using STRING_LIST = std::list<std::string>;
 using STRING_LIST_FAST = std::list<std::string, FastPoolAllocator<std::string> >;
-using STRING_SEQUENCE = std::deque<std::string>;
+
+using STRING_SEQUENCE = std::vector<std::string>;
 #define CONCAT(A, B) (A).splice((A).end(),(B))
 #elif DEQUE == 1
 using STRING_LIST = std::deque<std::string>;

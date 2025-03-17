@@ -54,6 +54,7 @@
 #include <functional>
 #include <thread>
 #include<future>
+
 #include "robin_hood.h"
 #include "env.h"
 #include "debugging.h"
@@ -127,7 +128,7 @@ public:
         INIT(input_ids, static_cast<int>(max_length * 1.2));
 
         input_ids.emplace_back(this->CLS_NUM);
-        auto basic_tokens = basic.tokenize<StringList>(text);
+        auto basic_tokens = basic.tokenize<STRING_LIST>(text);
         for (const auto &token: basic_tokens) {
             wordpiece.tokenizer_ids(token, max_length, input_ids);
             if (input_ids.size() > allowed_length) {

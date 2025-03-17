@@ -36,250 +36,334 @@
 //
 #ifndef LVCZSHPWCVMPWCPYHRKYHEJBSZRTVAXCMPUQFCFWFSTTETZCMVYCJYDVVSSNZS
 #define LVCZSHPWCVMPWCPYHRKYHEJBSZRTVAXCMPUQFCFWFSTTETZCMVYCJYDVVSSNZS
-
 #include "defines.h"
+#include <cctype>
+#include <codecvt>
+#include <locale>
+
+
+#include <robin_hood.h>
 #include <array>
 
+namespace {
+    constexpr std::array<bool, 65520> create_punctuation_array() {
+        std::array<bool, 65520> arr{};
 
-template<typename StringList=STRING_SEQUENCE>
-OPTIMIZED static StringList whitespace_tokenize(const std::string &text, const std::array<bool, 256> &isSpace) {
-    StringList tokens;
-    const char *data = text.data();
-    const char *end = data + text.size();
-    while (data < end) {
-        while (data < end && isSpace[static_cast<unsigned char>(*data)])
-            ++data;
+        for (int i = 33; i <= 47; i++) arr[i] = true;
+        for (int i = 58; i <= 64; i++) arr[i] = true;
+        for (int i = 91; i <= 96; i++) arr[i] = true;
+        for (int i = 123; i <= 126; i++) arr[i] = true;
 
-        if (data >= end)
-            break;
+        for (int i = 0x2000; i <= 0x206F; i++) arr[i] = true;
+        for (int i = 0x3000; i <= 0x303F; i++) arr[i] = true;
+        for (int i = 0xFF00; i <= 0xFFEF; i++) arr[i] = true;
+        for (int i = 0xFE30; i <= 0xFE4F; i++) arr[i] = true;
 
-        const char *start = data;
-        while (data < end && !isSpace[static_cast<unsigned char>(*data)])
-            ++data;
-        tokens.emplace_back(start, data - start);
+        constexpr int special_punct[] = {
+            0x201C, 0x201D, 0x2018, 0x2019, 0x300C, 0x300D,
+            0x300E, 0x300F, 0xFF5F, 0xFF60, 0x2E80, 0x2E99,
+            0x2E9B, 0x2EF3, 0x2028, 0x2029
+        };
+        for (int cp: special_punct) arr[cp] = true;
+
+        return arr;
     }
-    return tokens;
+
+    constexpr std::array<bool, 8293> create_control_array() {
+        std::array<bool, 8293> arr{};
+
+        for (int i = 0; i <= 0x1F; i++) {
+            if (i != 0x09 && i != 0x0A && i != 0x0D) {
+                arr[i] = true;
+            }
+        }
+
+        for (int i = 0x7F; i <= 0x9F; i++) arr[i] = true;
+
+        for (int i = 0x200B; i <= 0x200F; i++) arr[i] = true;
+        for (int i = 0x202A; i <= 0x202E; i++) arr[i] = true;
+        for (int i = 0x2060; i <= 0x2064; i++) arr[i] = true;
+
+        return arr;
+    }
+
+    constexpr std::array<bool, 12289> create_whitespace_array() {
+        std::array<bool, 12289> arr{};
+
+        arr[0x20] = true;
+        arr[0x09] = true;
+        arr[0x0A] = true;
+        arr[0x0D] = true;
+
+        constexpr int unicode_spaces[] = {
+            0xA0, 0x1680, 0x2000, 0x2001, 0x2002, 0x2003,
+            0x2004, 0x2005, 0x2006, 0x2007, 0x2008, 0x2009,
+            0x200A, 0x202F, 0x205F, 0x3000
+        };
+        for (int cp: unicode_spaces) arr[cp] = true;
+
+        return arr;
+    }
+
+    constexpr auto PUNCTUATION_ARRAY = create_punctuation_array();
+    constexpr auto CONTROL_ARRAY = create_control_array();
+    constexpr auto WHITESPACE_ARRAY = create_whitespace_array();
 }
 
+inline bool is_punctuation_cp(const int cp) {
+    return cp < PUNCTUATION_ARRAY.size() && PUNCTUATION_ARRAY[cp];
+}
 
-static std::string clean_text(const std::string &text, const std::array<char, 256> &char_map) {
-    if (text.empty())
-        return {};
+inline bool is_control_cp(const int cp) {
+    return cp < CONTROL_ARRAY.size() && CONTROL_ARRAY[cp];
+}
+
+inline bool is_whitespace_cp(const int cp) {
+    return cp < WHITESPACE_ARRAY.size() && WHITESPACE_ARRAY[cp];
+}
+inline size_t utf8_char_length(unsigned char c) {
+    if ((c & 0x80) == 0) return 1;
+    if ((c & 0xE0) == 0xC0) return 2;
+    if ((c & 0xF0) == 0xE0) return 3;
+    if ((c & 0xF8) == 0xF0) return 4;
+    return 1;
+}
+
+inline int utf8_to_codepoint(std::string_view str, size_t pos) {
+    const size_t len = str.size();
+    if (pos >= len) return 0;
+
+    const auto *bytes = reinterpret_cast<const unsigned char *>(str.data() + pos);
+    const unsigned char first_byte = bytes[0];
+
+    if (first_byte < 128) {
+        return first_byte;
+    }
+
+    if ((first_byte & 0xE0) == 0xC0) {
+        if (pos + 1 >= len) return 0;
+        if ((bytes[1] & 0xC0) != 0x80) return 0;
+
+        int cp = ((first_byte & 0x1F) << 6) | (bytes[1] & 0x3F);
+        if (cp < 0x80) return 0;
+        return cp;
+    }
+
+    if ((first_byte & 0xF0) == 0xE0) {
+        if (pos + 2 >= len) return 0;
+        if ((bytes[1] & 0xC0) != 0x80 || (bytes[2] & 0xC0) != 0x80) return 0;
+
+        int cp = ((first_byte & 0x0F) << 12) | ((bytes[1] & 0x3F) << 6) | (bytes[2] & 0x3F);
+        if (cp < 0x800 || (cp >= 0xD800 && cp <= 0xDFFF)) return 0;
+        return cp;
+    }
+
+    if ((first_byte & 0xF8) == 0xF0) {
+        if (pos + 3 >= len) return 0;
+
+        const unsigned char b1 = bytes[1];
+        const unsigned char b2 = bytes[2];
+        const unsigned char b3 = bytes[3];
+
+        if ((b1 & 0xC0) != 0x80 || (b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80) return 0;
+
+        int cp = ((first_byte & 0x07) << 18) | ((b1 & 0x3F) << 12) | ((b2 & 0x3F) << 6) | (b3 & 0x3F);
+        if (cp < 0x10000 || cp > 0x10FFFF) return 0;
+        return cp;
+    }
+
+    return 0;
+}
+
+inline std::string to_lower_case(const std::string_view &text) {
     std::string result;
-    result.reserve(text.size());
-    const char *p = text.data(), *end = p + text.size();
-    const char *cmap = char_map.data();
-
-    while (p < end) {
-        const auto c = static_cast<unsigned char>(*p);
-        if (c == 0) {
-            ++p;
-            continue;
-        }
-        if (c > 0x80) {
-            int skip = 1;
-            if ((c & 0xE0) == 0xC0 && p + 1 < end) {
-                skip = 2;
-                result.push_back(p[0]);
-                result.push_back(p[1]);
-            } else if ((c & 0xF0) == 0xE0 && p + 2 < end) {
-                skip = 3;
-                result.push_back(p[0]);
-                result.push_back(p[1]);
-                result.push_back(p[2]);
-            } else if ((c & 0xF8) == 0xF0 && p + 3 < end) {
-                skip = 4;
-                result.push_back(p[0]);
-                result.push_back(p[1]);
-                result.push_back(p[2]);
-                result.push_back(p[3]);
-            }
-            p += skip;
+    result.reserve(text.length());
+    for (size_t i = 0; i < text.size();) {
+        const int cp = utf8_to_codepoint(text, i);
+        const size_t char_len = utf8_char_length(text[i]);
+        if (cp < 128) {
+            result += std::tolower(text[i]);
         } else {
-            while (p < end && static_cast<unsigned char>(*p) < 0x80 && *p != 0) {
-                result.push_back(cmap[static_cast<unsigned char>(*p++)]);
-            }
+            result.append(text.data() + i, char_len);
         }
+        i += char_len;
     }
     return result;
 }
 
-constexpr std::array<bool, 256> createAsciiPunctBloom() {
-    std::array<bool, 256> filter{};
-    for (size_t i = 0; i < filter.size(); ++i) {
-        auto c = static_cast<unsigned char>(i);
-        filter[i] = ((c >= 33 && c <= 47) ||
-                     (c >= 58 && c <= 64) ||
-                     (c >= 91 && c <= 96) ||
-                     (c >= 123 && c <= 126));
-    }
-    return filter;
-}
-
-constexpr std::array<bool, 256> createAsciiSpaceBloom() {
-    std::array<bool, 256> filter{};
-    for (size_t i = 0; i < filter.size(); ++i) {
-        auto c = static_cast<unsigned char>(i);
-        filter[i] = (c == 32 || c == 9 || c == 10 || c == 11 || c == 12 || c == 13);
-    }
-    return filter;
-}
-
-constexpr auto asciiPunctBloom = createAsciiPunctBloom();
-constexpr auto asciiSpaceBloom = createAsciiSpaceBloom();
-
-template<typename StringList=STRING_LIST_FAST>
-OPTIMIZED static StringList split_on_punc(const std::string &text) {
-    StringList tokens;
-    auto sv = std::string_view(text);
-    const char *p = sv.data();
-    const char *end = p + sv.size();
-    const char *token_start = p;
-
-    auto flush_token = [&]() {
-        if (token_start < p)
-            tokens.emplace_back(token_start, p - token_start);
-    };
-
-    while (p < end) {
-        auto c = static_cast<unsigned char>(*p);
-        if (c < 0x80) {
-            if (asciiPunctBloom[c] || asciiSpaceBloom[c]) {
-                flush_token();
-                if (asciiPunctBloom[c])
-                    tokens.emplace_back(p, 1);
-                ++p;
-                token_start = p;
-            } else {
-                ++p;
-            }
-        } else {
-            int len = 1;
-            if ((c & 0xE0) == 0xC0)
-                len = 2;
-            else if ((c & 0xF0) == 0xE0)
-                len = 3;
-            else if ((c & 0xF8) == 0xF0)
-                len = 4;
-            p += len;
-        }
-    }
-    flush_token();
-    return std::move(tokens);
-}
-
-template<typename StringList=STRING_LIST_FAST>
-OPTIMIZED static StringList to_lower_split_on_punc(const std::string &text) {
-    StringList tokens;
-    std::string buffer;
-    const char *p = text.data(), *end = p + text.size();
-    while (p < end) {
-        auto c = static_cast<unsigned char>(*p);
-        if (c < 0x80) {
-            if (char lc = (c >= 'A' && c <= 'Z') ? c + 32 : c; std::ispunct(static_cast<unsigned char>(lc))) {
-                if (!buffer.empty()) {
-                    tokens.push_back(std::move(buffer));
-                    buffer.clear();
-                }
-                tokens.emplace_back(1, lc);
-                ++p;
-            } else if (std::isspace(static_cast<unsigned char>(lc))) {
-                if (!buffer.empty()) {
-                    tokens.push_back(std::move(buffer));
-                    buffer.clear();
-                }
-                ++p;
-            } else {
-                buffer.push_back(lc);
-                ++p;
-            }
-        } else {
-            const int len = (c & 0xE0) == 0xC0 ? 2 : (c & 0xF0) == 0xE0 ? 3 : (c & 0xF8) == 0xF0 ? 4 : 1;
-            if (p + len > end) break;
-            buffer.append(p, len);
-            p += len;
-        }
-    }
-    if (!buffer.empty())
-        tokens.push_back(std::move(buffer));
-    return tokens;
-}
-
-class ChineseCharDetector {
-private:
-    struct Range {
-        uint32_t start, end;
-
-        bool operator<(const Range &other) const {
-            return end < other.start;
-        }
-    };
-
-    static const std::vector<Range> ranges;
-
-public:
-    static bool isChineseChar(uint32_t codepoint) {
-        if (codepoint < 0x3400 || codepoint > 0x2FA1F)
-            return false;
-
-        return std::any_of(ranges.begin(), ranges.end(), [codepoint](const auto &range) {
-            return codepoint >= range.start && codepoint <= range.end;
-        });
-    }
-};
-
-SELECT_ANY const std::vector<ChineseCharDetector::Range> ChineseCharDetector::ranges = {
-    {0x4E00, 0x9FFF},
-    {0x3400, 0x4DBF},
-    {0xF900, 0xFAFF},
-    {0x20000, 0x2A6DF},
-    {0x2A700, 0x2B73F},
-    {0x2B740, 0x2B81F},
-    {0x2B820, 0x2CEAF},
-    {0x2F800, 0x2FA1F}
-};
-
-
-static std::string tokenize_chinese_chars(const std::string &text) {
+inline std::string run_strip_accents(const std::string_view &text) {
     std::string output;
-    //output.reserve(text.size());
-    size_t i = 0;
-    size_t n = text.size();
-    while (i < n) {
-        unsigned char c = text[i];
-        uint32_t codepoint = c;
-        int bytes = 1;
-        if (c >= 0x80) {
-            const int len = (c < 0xE0) ? 2 : (c < 0xF0) ? 3 : (c < 0xF8) ? 4 : 0;
-            if (!len || i + len > n) {
-                break;
-            }
-            if (len == 2) {
-                codepoint = ((c & 0x1F) << 6) | (static_cast<unsigned char>(text[i + 1]) & 0x3F);
-            } else if (len == 3) {
-                codepoint = ((c & 0x0F) << 12) |
-                            ((static_cast<unsigned char>(text[i + 1]) & 0x3F) << 6) |
-                            (static_cast<unsigned char>(text[i + 2]) & 0x3F);
-            } else if (len == 4) {
-                codepoint = ((c & 0x07) << 18) |
-                            ((static_cast<unsigned char>(text[i + 1]) & 0x3F) << 12) |
-                            ((static_cast<unsigned char>(text[i + 2]) & 0x3F) << 6) |
-                            (static_cast<unsigned char>(text[i + 3]) & 0x3F);
-            }
-            bytes = len;
-        }
-        if (!ChineseCharDetector::isChineseChar(codepoint)) {
-            for (int k = 0; k < bytes; ++k)
-                output.push_back(text[i + k]);
+    output.reserve(text.length());
+    for (size_t i = 0; i < text.size();) {
+        const int cp = utf8_to_codepoint(text, i);
+        const size_t char_len = utf8_char_length(text[i]);
+
+        if ((cp >= 0xC0 && cp <= 0xD6) || (cp >= 0xD8 && cp <= 0xDD)) {
+            output += 'A' + (cp - 0xC0) % 32;
+        } else if ((cp >= 0xE0 && cp <= 0xF6) || (cp >= 0xF8 && cp <= 0xFD)) {
+            output += 'a' + (cp - 0xE0) % 32;
+        } else if (cp == 0xFF) {
+            output += 'y';
         } else {
-            output.push_back(' ');
-            for (int k = 0; k < bytes; ++k)
-                output.push_back(text[i + k]);
-            output.push_back(' ');
+            output.append(text.data() + i, char_len);
         }
-        i += bytes;
+
+        i += char_len;
     }
     return output;
 }
 
+inline bool is_chinese_char(const int &cp) {
+    if (cp >= 0x4E00 && cp <= 0x9FFF) return true;
+    if (cp >= 0x3400 && cp <= 0x4DBF) return true;
+    if (cp >= 0xF900 && cp <= 0xFAFF) return true;
+
+    if (cp >= 0x20000 && cp <= 0x2A6DF) return true;
+    if (cp >= 0x2A700 && cp <= 0x2B73F) return true;
+    if (cp >= 0x2B740 && cp <= 0x2B81F) return true;
+    if (cp >= 0x2B820 && cp <= 0x2CEAF) return true;
+    if (cp >= 0x2F800 && cp <= 0x2FA1F) return true;
+    return false;
+}
+
+
+[[nodiscard]] static std::string tokenize_chinese_chars(const std::string &text) {
+    bool has_chinese = false;
+    for (size_t i = 0; i < text.size();) {
+        if (const int &cp = utf8_to_codepoint(text, i); is_chinese_char(cp)) {
+            has_chinese = true;
+            break;
+        }
+        i += utf8_char_length(text[i]);
+    }
+    if (!has_chinese) {
+        return text;
+    }
+    std::string output;
+
+    for (size_t i = 0; i < text.size();) {
+        const int cp = utf8_to_codepoint(text, i);
+        const size_t char_len = utf8_char_length(text[i]);
+        if (!is_chinese_char(cp)) {
+            output.append(text.substr(i, char_len));
+        } else {
+            output += ' ';
+            output.append(text.substr(i, char_len));
+            output += ' ';
+        }
+        i += char_len;
+    }
+    return output;
+}
+
+
+[[nodiscard]] static std::string clean_text(const std::string &text) {
+    std::string output;
+
+    for (size_t i = 0; i < text.size();) {
+        const int cp = utf8_to_codepoint(text, i);
+        const size_t char_len = utf8_char_length(text[i]);
+        if (cp == 0 || cp == 0xfffd || cp == 0x2028 || cp == 0x2029 || is_control_cp(cp)) {
+            i += char_len;
+            continue;
+        }
+        if (!is_whitespace_cp(cp)) {
+            output.append(text.substr(i, char_len));
+        } else {
+            output += ' ';
+        }
+        i += char_len;
+    }
+    return output;
+}
+
+template<typename StringList=STRING_LIST_FAST>
+static StringList run_split_on_punc_do_lower(const std::string &text) {
+    std::string &&lower_text = to_lower_case(text);
+    std::string &&stripped = run_strip_accents(lower_text);
+    bool has_punctuation = false;
+    for (size_t i = 0; i < stripped.size();) {
+        if (const int cp = utf8_to_codepoint(stripped, i); is_punctuation_cp(cp)) {
+            has_punctuation = true;
+            break;
+        }
+        i += utf8_char_length(stripped[i]);
+    }
+    StringList output;
+    if (!has_punctuation) {
+        output.emplace_back(stripped);
+        return output;
+    }
+
+    size_t word_start = 0;
+    bool in_word = false;
+    for (size_t i = 0; i < stripped.size();) {
+        const int cp = utf8_to_codepoint(stripped, i);
+        size_t char_len = utf8_char_length(stripped[i]);
+
+        if (is_punctuation_cp(cp)) {
+            if (in_word) {
+                output.push_back(stripped.substr(word_start, i - word_start));
+                in_word = false;
+            }
+            output.push_back(stripped.substr(i, char_len));
+        } else {
+            if (!in_word) {
+                word_start = i;
+                in_word = true;
+            }
+        }
+
+        i += char_len;
+    }
+
+    if (in_word) {
+        output.push_back(stripped.substr(word_start));
+    }
+    return output;
+}
+
+template<typename StringList = STRING_LIST_FAST>
+static StringList run_split_on_punc(const std::string &text) {
+    size_t sz = text.size();
+    size_t i = 0;
+    bool has_punc = false;
+    while (i < sz) {
+        int cp = utf8_to_codepoint(text, i);
+        size_t len = utf8_char_length(text[i]);
+        if (is_punctuation_cp(cp)) {
+            has_punc = true;
+            break;
+        }
+        i += len;
+    }
+    StringList output;
+    if (!has_punc) {
+        output.emplace_back(text);
+        return output;
+    }
+    i = 0;
+    size_t word_start = 0;
+    bool in_word = false;
+    while (i < sz) {
+        int cp = utf8_to_codepoint(text, i);
+        size_t len = utf8_char_length(text[i]);
+        if (is_punctuation_cp(cp)) {
+            if (in_word) {
+                output.emplace_back(text.substr(word_start, i - word_start));
+                in_word = false;
+            }
+            output.emplace_back(text.substr(i, len));
+        } else {
+            if (!in_word) {
+                word_start = i;
+                in_word = true;
+            }
+        }
+        i += len;
+    }
+    if (in_word)
+        output.emplace_back(text.substr(word_start));
+    return output;
+}
 #endif
