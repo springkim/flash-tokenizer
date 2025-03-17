@@ -85,6 +85,7 @@ protected:
     const BasicTokenizer basic;
     const WordpieceTokenizer wordpiece;
     std::string _version_ = "Unknown";
+
 public:
     explicit FlashBertTokenizer(const std::string &vocab_file, bool do_lower_case = true)
         : vocab(vocab_file), basic(do_lower_case),
@@ -143,7 +144,8 @@ public:
     }
 
     [[nodiscard]] std::vector<int>
-    convert_tokens_to_ids(const std::vector<std::string>  &tokens, int max_length = -1) const {
+
+    convert_tokens_to_ids(const std::vector<std::string> &tokens, int max_length = -1) const {
         return convert_by_vocab(vocab, tokens, max_length);
     }
 
@@ -162,6 +164,7 @@ public:
     }
 
     virtual std::vector<std::vector<int> > batch_encode(const std::vector<std::string> &texts, const std::string &padding, int max_length) {
+#ifndef _OPENMP
         if (!this->pool) {
             this->pool = std::make_unique<ThreadPool>();
         }
@@ -183,6 +186,16 @@ public:
         }
 
         return input_ids;
+#else
+        std::vector<std::vector<int>> input_ids(texts.size());
+
+#pragma omp parallel for
+        for (size_t i = 0; i < texts.size(); ++i) {
+            input_ids[i] = this->tokenizer_ids<STRING_LIST>(texts[i], max_length, padding);
+        }
+
+        return input_ids;
+#endif
     }
 };
 

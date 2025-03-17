@@ -35,6 +35,9 @@ option(BUILD_PYTHON_MODULE "Build the Python module" ON)
 set(SRC_FILES src/bert_tokenizer.cpp)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    if (WIN32)
+        find_package(OpenMP)
+    endif ()
     set(COMPILE_OPTIONS -Ofast -funroll-loops -floop-nest-optimize)
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     add_compile_options(-Wno-deprecated-declarations)
@@ -58,6 +61,13 @@ if (BUILD_PYTHON_MODULE)
     list(APPEND CMAKE_PREFIX_PATH "${_pybind11_cmake_dir}")
     find_package(pybind11 REQUIRED)
 
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+        if (WIN32)
+            if (OpenMP_CXX_FOUND)
+                target_link_libraries(bert_tokenizer PRIVATE OpenMP::OpenMP_CXX)
+            endif ()
+        endif ()
+    endif ()
 
     add_library(bert_tokenizer STATIC
             ${SRC_FILES}
@@ -79,6 +89,12 @@ if (BUILD_EXECUTABLE)
     add_executable(flash_tokenizer main.cpp ${SRC_FILES})
     target_include_directories(flash_tokenizer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+        if (WIN32)
+            if (OpenMP_CXX_FOUND)
+                target_link_libraries(bert_tokenizer PRIVATE OpenMP::OpenMP_CXX)
+            endif ()
+        endif ()
+    endif ()
     target_compile_options(flash_tokenizer PRIVATE ${COMPILE_OPTIONS})
 endif ()

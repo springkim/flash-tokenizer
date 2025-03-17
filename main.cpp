@@ -28,7 +28,7 @@
 #define SPLADE
 #endif
 
-#define MP 1
+#define MP 32
 
 #ifdef KCBERT_BASE
 #define TEXTS_PATH "../dataset/kcbert_base/text_10M.txt"

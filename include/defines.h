@@ -35,16 +35,16 @@
 // the use of this software, even if advised of the possibility of such damage.
 //
 #pragma once
-#ifndef RPuJgxZkjScv9hYfPRA9iQ19AFzC9Ti4V9HPiSpACxwZdy6HyjCGRek7aP6Udrhp
-#define RPuJgxZkjScv9hYfPRA9iQ19AFzC9Ti4V9HPiSpACxwZdy6HyjCGRek7aP6Udrhp
+#ifndef FTNACWLRUCDTKQHXMLSYPEJZLUZBRVCVUMSUUPTWEMUVFVKHXLBQEYZYDMCPWT
+#define FTNACWLRUCDTKQHXMLSYPEJZLUZBRVCVUMSUUPTWEMUVFVKHXLBQEYZYDMCPWT
 #include "config.h"
-#include<vector>
-#include<list>
-#include<deque>
-#include<string>
+#include <vector>
+#include <list>
+#include <deque>
+#include <string>
 #include <execution>
-#include<unordered_set>
-#include"allocator.h"
+#include <unordered_set>
+#include "allocator.h"
 
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -55,6 +55,14 @@
 #define SELECT_ANY  __attribute__((weak))
 #endif
 
+#if defined(_WIN32) || defined(_WIN64)
+#if defined(__GNUC__)
+#ifdef _OPENMP
+#include "omp.h"
+#else
+#endif
+#endif
+#endif
 
 #if LIST == 1
 using STRING_LIST = std::list<std::string>;
@@ -94,7 +102,6 @@ using INT_LIST = std::vector<int>;
 #else
 #define EXECUTION std::execution::par
 #endif
-
 
 
 #endif
