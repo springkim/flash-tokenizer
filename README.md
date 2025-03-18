@@ -14,7 +14,11 @@ The world's fastest tokenizer library!
 
 [FlashTokenizer](https://pypi.org/project/flash-tokenizer/) is a high-performance tokenizer implementation in C++ of the BertTokenizer used for LLM inference. It has the highest speed and accuracy of any tokenizer, such as [FlashAttention](https://github.com/Dao-AILab/flash-attention) and [FlashInfer](https://github.com/flashinfer-ai/flashinfer), and is 4-5 times faster than BertTokenizerFast in transformers.
 
-![](https://i.imgur.com/0X3ozSc.gif)
+
+
+
+https://github.com/user-attachments/assets/1e399a7f-4173-43b6-8635-5b8828329ca2
+
 
 
 > [!NOTE]  
