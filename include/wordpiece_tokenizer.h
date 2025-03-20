@@ -55,44 +55,52 @@ protected:
     Trie suffixTrie;
 
 public:
-    virtual void buildTries() {
+    FORCE_INLINE virtual void buildTries() {
         for (const auto &entry: vocab.token_to_index) {
             const std::string &word = entry.first;
             const int &idx = entry.second;
-            if (word.rfind(suffix_indicator, 0) == 0)
+            if (word.rfind(suffix_indicator, 0) == 0) {
                 suffixTrie.insert(word.substr(suffix_indicator.size()), idx);
-            else
+            } else {
                 initialTrie.insert(word, idx);
+            }
         }
+        initialTrie.build();
+        suffixTrie.build();
     }
 
-public:
     virtual ~WordpieceTokenizer() = default;
 
     explicit WordpieceTokenizer(const Vocab &vocab_, std::string unk = "[UNK]", int max_chars = 256)
         : vocab(vocab_), UNK(std::move(unk)) {
-        UNK_NUM = vocab.get(UNK);
+        this->UNK_NUM = vocab.get(UNK);
         WordpieceTokenizer::buildTries();
     }
 
-    OPTIMIZED virtual void tokenizer_ids(const std::string &token, int max_length, INT_LIST &input_ids) const {
-        if (token.size() > static_cast<size_t>(max_length)) {
-            input_ids.push_back(UNK_NUM);
-            return;
+    FORCE_INLINE virtual int tokenizer_ids(const std::string &token, const int max_length, std::vector<int> &input_ids) const {
+        if (token.size() > static_cast<size_t>(max_length) && input_ids.size() < max_length) {
+            input_ids.emplace_back(this->UNK_NUM);
+            return input_ids.size();
         }
         const size_t original_size = input_ids.size();
         size_t start = 0;
         while (start < token.size()) {
-            const Trie &trie = (start == 0 ? initialTrie : suffixTrie);
+            const Trie &trie = (start == 0 ? this->initialTrie : this->suffixTrie);
             auto [match_length, match_idx] = trie.search(token, start);
             if (match_idx == -1) {
                 input_ids.resize(original_size);
-                input_ids.push_back(UNK_NUM);
-                return;
+                if (input_ids.size() < max_length)
+                    input_ids.emplace_back(this->UNK_NUM);
+                return input_ids.size();
             }
-            input_ids.push_back(match_idx);
+            if (input_ids.size() < max_length) {
+                input_ids.emplace_back(match_idx);
+            }
+            else
+                return input_ids.size();
             start += match_length;
         }
+        return input_ids.size();
     }
 };
 
@@ -115,10 +123,10 @@ public:
     }
 
 
-    OPTIMIZED virtual void tokenizer_ids(const std::string &token, int max_length, INT_LIST &input_ids) const {
-        if (token.size() > static_cast<size_t>(max_length)) {
+    FORCE_INLINE virtual int tokenizer_ids(const std::string &token, int max_length, INT_LIST &input_ids) const {
+        if (token.size() > static_cast<size_t>(max_length) && input_ids.size() < max_length) {
             input_ids.push_back(this->UNK_NUM);
-            return;
+            return input_ids.size();
         }
         const int original_size = input_ids.size();
         size_t start = 0;
@@ -140,14 +148,16 @@ public:
             }
             if (!found) {
                 input_ids.resize(original_size);
-                input_ids.emplace_back(this->UNK_NUM);
-                return;
+                if (input_ids.size()<max_length)
+                    input_ids.emplace_back(this->UNK_NUM);
+                return input_ids.size();
             }
         }
+        return input_ids.size();
     }
 
     template<typename StringList>
-    OPTIMIZED [[nodiscard]] StringList tokenize(const std::string &token, int max_length) const {
+    FORCE_INLINE  StringList tokenize(const std::string &token, int max_length) const {
         StringList output;
         if (token.size() > static_cast<size_t>(max_length)) {
             return {this->UNK};

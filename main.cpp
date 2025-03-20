@@ -15,8 +15,8 @@
 #include "bert_tokenizer.h"
 #include "env.h"
 
-
-#define DATASET_NUMBER 6
+#include"debugging.h"
+#define DATASET_NUMBER 8
 
 #if DATASET_NUMBER == 1
 // KCBERT_BASE
@@ -34,9 +34,15 @@
 #define SPLADE_NORMAL
 #elif DATASET_NUMBER == 6
 #define SPLADE_UNIFORM
+#elif DATASET_NUMBER == 7
+#define BERT_BASE_UNCASED
+#elif DATASET_NUMBER == 8
+#define BERT_BASE_MULTILINGUAL_CASED
 #endif
 
 #define MP 1
+#define DO_PARALLEL true
+
 
 #ifdef KCBERT_BASE
 #define TEXTS_PATH "../dataset/kcbert_base/text_10M.txt"
@@ -85,7 +91,7 @@ std::string DATASET_NAME="splade";
 #define MAX_LENGTH 512
 #define DO_LOWER false
 using TokenizerClass = FlashBertTokenizer;
-std::string DATASET_NAME="splade_normal";
+std::string DATASET_NAME = "splade_normal";
 #endif
 
 #ifdef SPLADE_UNIFORM
@@ -97,6 +103,27 @@ std::string DATASET_NAME="splade_normal";
 using TokenizerClass = FlashBertTokenizer;
 std::string DATASET_NAME="splade_uniform";
 #endif
+
+#ifdef BERT_BASE_UNCASED
+#define TEXTS_PATH "../dataset/bert-base-uncased/bert_base_uncased.txt"
+#define IDS_PATH "../dataset/bert-base-uncased/bert_base_uncased_gt.txt"
+#define VOCAB_PATH "../dataset/bert-base-uncased/vocab.txt"
+#define MAX_LENGTH 512
+#define DO_LOWER true
+using TokenizerClass = FlashBertTokenizer;
+std::string DATASET_NAME="bert-base-uncased";
+#endif
+
+#ifdef BERT_BASE_MULTILINGUAL_CASED
+#define TEXTS_PATH "../dataset/bert-base-multilingual-cased/bert-base-multilingual-cased.txt"
+#define IDS_PATH "../dataset/bert-base-multilingual-cased/bert-base-multilingual-cased-gt.txt"
+#define VOCAB_PATH "../dataset/bert-base-multilingual-cased/vocab.txt"
+#define MAX_LENGTH 512
+#define DO_LOWER false
+using TokenizerClass = FlashBertTokenizer;
+std::string DATASET_NAME="bert-base-multilingual-cased";
+#endif
+
 
 using namespace std;
 
@@ -184,8 +211,10 @@ vector<vector<int> > load_gt() {
 
 
 void test() {
-#define LOAD_PARALLEL 1
+#define LOAD_PARALLEL 0
     Timer::Tick("LoadDataset");
+    double accuracy;
+    double min_elapsed_time = std::numeric_limits<double>::max();
 #if LOAD_PARALLEL == 1
     std::future<std::vector<std::string> > titles_future =
             std::async(std::launch::async, load_titles);
@@ -194,8 +223,8 @@ void test() {
             std::async(std::launch::async, load_gt);
     auto texts = titles_future.get();
     auto gts = gts_future.get();
-    double accuracy;
-    double min_elapsed_time=std::numeric_limits<double>::max();
+
+
 #else
     auto texts = load_titles();
     auto gts = load_gt();
@@ -204,7 +233,7 @@ void test() {
     cout << "Data/GT loaded : " << Timer::Watch("LoadDataset").accu << endl;
     cout << DATASET_NAME << endl;
     TokenizerClass tokenizer(VOCAB_PATH, DO_LOWER);
-    for (int testcase=0;testcase<3;testcase++) {
+    for (int testcase = 0; testcase < 3; testcase++) {
         std::chrono::system_clock::time_point t_beg, t_end;
         std::chrono::duration<double> diff{};
 
@@ -226,14 +255,14 @@ void test() {
             title_chunk.reserve(chunk_size);
             gt_chunk.reserve(chunk_size);
             for (size_t j = 0; j < chunk_size; j++) {
-                title_chunk.push_back(std::move(texts[i + j]));
-                gt_chunk.push_back(std::move(gts[i + j]));
+                title_chunk.push_back(texts[i + j]);
+                gt_chunk.push_back(gts[i + j]);
             }
-            titles.push_back(std::move(title_chunk));
-            gts_group.push_back(std::move(gt_chunk));
+            titles.push_back(title_chunk);
+            gts_group.push_back(gt_chunk);
         }
         for (size_t i = 0; i < titles.size(); i++) {
-            auto ids = tokenizer.batch_encode(titles[i], "longest", MAX_LENGTH);
+            auto ids = tokenizer.batch_encode(titles[i], "longest", MAX_LENGTH,DO_PARALLEL);
 
             for (size_t j = 0; j < ids.size(); j++) {
                 if (ids[j] == gts_group[i][j]) {
@@ -243,10 +272,20 @@ void test() {
         }
 #else
         cout << "SingleEncoding(Single Thread)" << endl;
+
         for (size_t i = 0; i < texts.size(); i++) {
+            //if (i==24)continue;
             auto ids = tokenizer.encode(texts[i], "longest", MAX_LENGTH);
+            // if (ids!=gts[i]) {
+            //     cout << i << endl;
+            //     cout << texts[i] << endl;
+            //     printd(ids);
+            //     printd(gts[i]);
+            //     exit(1);
+            // }
             correct += ids == gts[i];
         }
+
 #endif
 
 
@@ -260,17 +299,25 @@ void test() {
         accuracy = static_cast<double>(correct) * 100.0 / static_cast<double>(texts.size());
         std::cout << accuracy << " % Accuracy" << std::endl;
         std::cout << static_cast<double>(texts.size()) / elapsed_time << " RPS" << std::endl;
+        std::cout << "Runtime : " << elapsed_time / texts.size() * 1000.0 << "ms" << std::endl;
         std::cout << "--------------" << std::endl;
+        //break;
     }
     cout << "|" << DATASET_NAME << "|" << min_elapsed_time << "|" << accuracy << "|" << std::endl;
 }
 
-
 int main() {
-    std::ios::sync_with_stdio(false);
+    // std::ios::sync_with_stdio(false);
+    // std::string text="ㆍ";
+    //
+    //
+    // const int cp = utf8_to_codepoint(text, 0);
+    //
+    // cout << cp << endl;
+    // return 0;
     cout << cpp_env() << endl;
     test();
 
-    cout << g_1 << "\t" << g_2 << endl;
+    cout << g_1 << "\t" << g_2 << "\t" << g_3 << "\t" << g_4 << endl;
     return 0;
 }

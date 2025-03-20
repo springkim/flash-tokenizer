@@ -37,18 +37,12 @@
 #pragma once
 #ifndef FTNACWLRUCDTKQHXMLSYPEJZLUZBRVCVUMSUUPTWEMUVFVKHXLBQEYZYDMCPWT
 #define FTNACWLRUCDTKQHXMLSYPEJZLUZBRVCVUMSUUPTWEMUVFVKHXLBQEYZYDMCPWT
-//#undef _GLIBCXX_HAVE_AT_QUICK_EXIT
-// #undef _GLIBCXX_HAVE_QUICK_EXIT
-// #include<stdlib.h>
+
 #include "config.h"
 #include <vector>
-#include <list>
-#include <deque>
 #include <string>
 
-#include <unordered_set>
-#include "allocator.h"
-
+//****************************** SELECT_ANY ******************************
 
 #if defined(_WIN32) || defined(_WIN64)
 #define SELECT_ANY  __declspec(selectany)
@@ -58,6 +52,7 @@
 #define SELECT_ANY  __attribute__((weak))
 #endif
 
+//****************************** OPENMP ******************************
 #if defined(_WIN32) || defined(_WIN64)
 #if defined(__GNUC__)
 #ifdef _OPENMP
@@ -67,40 +62,7 @@
 #endif
 #endif
 
-#if LIST == 1
-using STRING_LIST = std::list<std::string>;
-using STRING_LIST_FAST = std::list<std::string, FastPoolAllocator<std::string> >;
-
-using STRING_SEQUENCE = std::vector<std::string>;
-#define CONCAT(A, B) (A).splice((A).end(),(B))
-#elif DEQUE == 1
-using STRING_LIST = std::deque<std::string>;
-using STRING_LIST_FAST = std::deque<std::string, FastPoolAllocator<std::string> >;
-#define CONCAT(A, B) std::move((B).begin(),(B).end(),std::back_inserter((A)))
-#elif VECTOR == 1
-using STRING_LIST = std::vector<std::string>;
-#define CONCAT(A, B) std::move((B).begin(),(B).end(),std::back_inserter((A)))
-#endif
-
-
-#if LIST_IDS == 1
-using INT_LIST = std::list<int>;
-#define IDS_CONCAT(A, B) A.splice(A.end(),B)
-#define INIT(A, B) ((void)0)
-#define IDS_RETURN(A)   std::vector<int>((A).begin(),(A).end())
-#elif DEQUE_IDS == 1
-using INT_LIST = std::deque<INTEGER_TYPE>;
-#define IDS_CONCAT(A, B) std::move((B).begin(),(B).end(),std::back_inserter((A)))
-#define INIT(A,B) ((void)0)
-#define IDS_RETURN(A)   std::vector<int>((A).begin(),(A).end())
-#elif VECTOR_IDS == 1
-using INT_LIST = std::vector<int>;
-#define IDS_CONCAT(A, B) std::move((B).begin(),(B).end(),std::back_inserter((A)))
-#define INIT(A, B) (A).reserve((B))
-#define IDS_RETURN(A)   (A)
-#endif
-
-
+//****************************** std::execution ******************************
 #if defined(_MSC_VER) || defined(__clang__)
 #define EXECUTION
 #else
@@ -108,5 +70,13 @@ using INT_LIST = std::vector<int>;
 #define EXECUTION std::execution::par
 #endif
 
+//****************************** INLINE ******************************
+#if defined(_MSC_VER)
+#define FORCE_INLINE __forceinline
+#elif defined(__GNUC__) || defined(__clang__)
+#define FORCE_INLINE inline __attribute__((always_inline))
+#else
+#define FORCE_INLINE inline
+#endif
 
 #endif

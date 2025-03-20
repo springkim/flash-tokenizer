@@ -35,8 +35,8 @@
 // the use of this software, even if advised of the possibility of such damage.
 //
 #pragma once
-#ifndef UsyLSY1FKzu9XBDKPLWlKlRdijiuIhcNi9Vh6rgU2KQ
-#define UsyLSY1FKzu9XBDKPLWlKlRdijiuIhcNi9Vh6rgU2KQ
+#ifndef EUUECTTEQNEEWWFLVRPCDLSEWYMHQFCVVLPKHJECCYQSMWNSCYYKVXHRHYZDEA
+#define EUUECTTEQNEEWWFLVRPCDLSEWYMHQFCVVLPKHJECCYQSMWNSCYYKVXHRHYZDEA
 
 #include<vector>
 #include<string>

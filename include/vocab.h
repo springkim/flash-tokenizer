@@ -40,9 +40,9 @@
 #include <fstream>
 #include <iostream>
 #include "defines.h"
-#include "robin_hood.h"
+#include <robin_hood.h>
 
-OPTIMIZED class Vocab {
+class Vocab {
 public:
     std::vector<std::string> tokens{};
     robin_hood::unordered_flat_map<std::string, int> token_to_index{};
@@ -64,16 +64,15 @@ public:
         ifs.close();
     }
 
-    [[nodiscard]] int get(const std::string &token, int default_value = 0) const {
+    [[nodiscard]] FORCE_INLINE int get(const std::string &token, const int default_value = 0) const {
         if (const auto it = this->token_to_index.find(token); it != this->token_to_index.end())
             return it->second;
         return default_value;
     }
 };
 
-template<typename StringList=STRING_LIST_FAST>
-OPTIMIZED static std::vector<int>
-convert_by_vocab(const Vocab &vocab, const StringList &items, int max_length = -1) {
+FORCE_INLINE std::vector<int>
+convert_by_vocab(const Vocab &vocab, const std::vector<std::string> &items, const int max_length = -1) {
     const size_t size = items.size();
     const size_t final_size = (max_length != -1 && static_cast<size_t>(max_length) > size)
                                   ? static_cast<size_t>(max_length)
@@ -90,4 +89,4 @@ convert_by_vocab(const Vocab &vocab, const StringList &items, int max_length = -
     }
     return ids;
 }
-#endif //VOCAB_H
+#endif

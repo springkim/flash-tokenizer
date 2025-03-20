@@ -41,21 +41,101 @@
 #include <vector>
 #include <array>
 #include <string>
-#include <utility>
+#include <queue>
 
+
+struct TrieNode {
+    TRIE_INTEGER vocab_index{};
+    std::array<TRIE_INTEGER, 256> children{};
+
+    explicit TrieNode() : vocab_index(-1) {
+        children.fill(-1);
+    }
+};
+
+struct AhocorasickTrieNode : public TrieNode {
+    std::array<bool, 256> explicitChild{};
+    TRIE_INTEGER fail;
+
+    AhocorasickTrieNode(): TrieNode(), fail(0) {
+        children.fill(-1);
+        explicitChild.fill(false);
+    }
+};
+
+#if USE_AHOCORASICK == 1
 class Trie {
 public:
-    struct Node {
-        int vocab_index;
-        std::array<int, 256> children{};
+    std::vector<AhocorasickTrieNode> pool{};
 
-        Node() : vocab_index(-1) {
-            children.fill(-1);
+    Trie() {
+        pool.reserve(1024);
+        pool.emplace_back();
+    }
+
+    FORCE_INLINE void insert(const std::string &word, int index) {
+        int current = 0;
+        for (const unsigned char c: word) {
+            if (pool[current].children[c] == -1) {
+                pool[current].children[c] = pool.size();
+                pool[current].explicitChild[c] = true;
+                pool.emplace_back();
+            }
+            current = pool[current].children[c];
         }
-    };
+        pool[current].vocab_index = index;
+    }
 
+    FORCE_INLINE void build() {
+        std::queue<TRIE_INTEGER> q;
+        for (TRIE_INTEGER c = 0; c < 256; ++c) {
+            if (TRIE_INTEGER child = pool[0].children[c]; child != -1) {
+                pool[child].fail = 0;
+                q.push(child);
+            } else {
+                pool[0].children[c] = 0;
+                pool[0].explicitChild[c] = false;
+            }
+        }
+        while (!q.empty()) {
+            const TRIE_INTEGER cur = q.front();
+            q.pop();
+            const TRIE_INTEGER f = pool[cur].fail;
+            for (TRIE_INTEGER c = 0; c < 256; ++c) {
+                if (TRIE_INTEGER child = pool[cur].children[c]; child != -1 && pool[cur].explicitChild[c]) {
+                    pool[child].fail = pool[f].children[c];
+                    q.push(child);
+                } else {
+                    pool[cur].children[c] = pool[f].children[c];
+                }
+            }
+        }
+    }
+
+
+    [[nodiscard]] std::pair<size_t, int> search(const std::string &token, const size_t start) const {
+        TRIE_INTEGER current = 0;
+        size_t best_length = 0;
+        TRIE_INTEGER best_index = -1;
+        for (size_t pos = start; pos < token.size(); ++pos) {
+            const unsigned char c = token[pos];
+            if (!this->pool[current].explicitChild[c])
+                break;
+            current = pool[current].children[c];
+            if (pool[current].vocab_index != -1) {
+                best_length = pos - start + 1;
+                best_index = this->pool[current].vocab_index;
+            }
+        }
+        return {best_length, best_index};
+    }
+};
+
+#else
+
+class Trie {
 protected:
-    std::vector<Node> pool;
+    std::vector<TrieNode> pool;
 
 public:
     Trie() {
@@ -63,9 +143,9 @@ public:
         pool.emplace_back();
     }
 
-    void insert(const std::string &word, int index) {
+    FORCE_INLINE void insert(const std::string &word, int index) {
         int current = 0;
-        for (unsigned char c: word) {
+        for (const unsigned char c: word) {
             int child = this->pool[current].children[c];
             if (child == -1) {
                 child = pool.size();
@@ -77,13 +157,13 @@ public:
         pool[current].vocab_index = index;
     }
 
-    [[nodiscard]] std::pair<size_t, int> search(const std::string &token, size_t start) const {
-        int current = 0;
+    [[nodiscard]] std::pair<size_t, int> search(const std::string &token, const size_t start) const {
+        TRIE_INTEGER current = 0;
         size_t best_length = 0;
-        int best_index = -1;
+        TRIE_INTEGER best_index = -1;
         for (size_t pos = start; pos < token.size(); ++pos) {
-            unsigned char c = token[pos];
-            int child = this->pool[current].children[c];
+            const unsigned char c = token[pos];
+            const TRIE_INTEGER child = this->pool[current].children[c];
             if (child == -1)
                 break;
             current = child;
@@ -94,7 +174,11 @@ public:
         }
         return {best_length, best_index};
     }
+
+    FORCE_INLINE void build() {
+    }
 };
 
+#endif
 
 #endif

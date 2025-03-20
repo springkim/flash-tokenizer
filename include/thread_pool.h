@@ -34,9 +34,9 @@
 // or tort (including negligence or otherwise) arising in any way out of
 // the use of this software, even if advised of the possibility of such damage.
 //
-
-#ifndef nJQYFBCpP0wmcLcM44pAtvKYTdABjnrWexmfMjqxNr852c6J09
-#define nJQYFBCpP0wmcLcM44pAtvKYTdABjnrWexmfMjqxNr852c6J09
+#pragma once
+#ifndef BRLKNPYZFSMVUGRMSQGMWRWAXYXTRUTYSRPKQTFEJCHGNVRPQCTXCEWNJGQZUV
+#define BRLKNPYZFSMVUGRMSQGMWRWAXYXTRUTYSRPKQTFEJCHGNVRPQCTXCEWNJGQZUV
 
 #include <vector>
 #include <queue>

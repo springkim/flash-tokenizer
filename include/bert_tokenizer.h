@@ -67,7 +67,7 @@
 #include "basic_tokenizer.h"
 #include "wordpiece_tokenizer.h"
 #include "wordpiecebackward_tokenizer.h"
-
+#include "charmap.h"
 
 class FlashBertTokenizer {
 protected:
@@ -77,7 +77,7 @@ protected:
     int CLS_NUM{};
     int SEP_NUM{};
     int UNK_NUM{};
-
+    const int model_max_length;
     std::unique_ptr<ThreadPool> pool{};
 
 
@@ -87,13 +87,17 @@ protected:
     std::string _version_ = "Unknown";
 
 public:
-    explicit FlashBertTokenizer(const std::string &vocab_file, bool do_lower_case = true)
-        : vocab(vocab_file), basic(do_lower_case),
+    explicit FlashBertTokenizer(const std::string &vocab_file, const bool do_lower_case = true,
+                                const int model_max_length = -1)
+        : vocab(vocab_file), basic(do_lower_case), model_max_length(model_max_length),
           wordpiece(vocab, this->UNK) {
         this->CLS_NUM = vocab.get(this->CLS);
         this->SEP_NUM = vocab.get(this->SEP);
         this->UNK_NUM = vocab.get(this->UNK);
-        this->_version_ = cpp_env(VERSION);
+        this->_version_ = cpp_env(VERSION_INFO);
+        if (accent_mapping.empty()) {
+            accent_mapping = initializeCharMap();
+        }
     }
 
     virtual ~FlashBertTokenizer() = default;
@@ -103,36 +107,15 @@ public:
     }
 
 
-    // template<typename StringList>
-    // StringList tokenize(const std::string &text, int max_length = 100) {
-    //     const size_t allowed_length = max_length - 1;
-    //     StringList output;
-    //     output.emplace_back(this->CLS);
-    //     auto basic_tokens = basic.tokenize<StringList>(text);
-    //     for (const auto &token: basic_tokens) {
-    //         auto wp_tokens = wordpiece.tokenize(token, max_length);
-    //         CONCAT(output, wp_tokens);
-    //         if (output.size() > allowed_length) {
-    //             output.resize(allowed_length);
-    //             break;
-    //         }
-    //     }
-    //     output.emplace_back(this->SEP);
-    //     return output;
-    // }
-
-    template<typename StringList=STRING_LIST>
-    std::vector<int> tokenizer_ids(const std::string &text, int max_length, const std::string &padding) {
+    virtual std::vector<int> tokenizer_ids(const std::string &text, const int max_length, const std::string &padding) {
         const size_t allowed_length = max_length - 1;
-        INT_LIST input_ids;
-        INIT(input_ids, static_cast<int>(max_length * 1.2));
+        std::vector<int> input_ids;
+        input_ids.reserve(1024);
 
         input_ids.emplace_back(this->CLS_NUM);
-        auto basic_tokens = basic.tokenize<STRING_LIST>(text);
+        auto basic_tokens = basic.tokenize(text);
         for (const auto &token: basic_tokens) {
-            wordpiece.tokenizer_ids(token, max_length, input_ids);
-            if (input_ids.size() > allowed_length) {
-                input_ids.resize(allowed_length);
+            if (wordpiece.tokenizer_ids(token, max_length - 1, input_ids) == allowed_length) {
                 break;
             }
         }
@@ -140,106 +123,111 @@ public:
         if (padding == "max_length") {
             input_ids.resize(max_length, 0);
         }
-        return IDS_RETURN(input_ids);
-    }
-
-    [[nodiscard]] std::vector<int>
-
-    convert_tokens_to_ids(const std::vector<std::string> &tokens, int max_length = -1) const {
-        return convert_by_vocab(vocab, tokens, max_length);
-    }
-
-    [[nodiscard]] std::vector<std::string> convert_ids_to_tokens(const std::vector<int> &ids) const {
-        std::vector<std::string> tokens;
-        tokens.reserve(ids.size());
-        for (const int id: ids) {
-            tokens.push_back(
-                (id >= 0 && id < static_cast<int>(this->vocab.tokens.size())) ? this->vocab.tokens[id] : this->UNK);
-        }
-        return tokens;
-    }
-
-    virtual std::vector<int> encode(const std::string &text, const std::string &padding, int max_length) {
-        return this->tokenizer_ids<STRING_LIST>(text, max_length, padding);
-    }
-
-    virtual std::vector<std::vector<int> > batch_encode(const std::vector<std::string> &texts, const std::string &padding, int max_length) {
-#ifndef _OPENMP
-        if (!this->pool) {
-            this->pool = std::make_unique<ThreadPool>();
-        }
-        std::vector<std::future<std::invoke_result_t<decltype(&std::decay_t<decltype(*this)>::tokenizer_ids<STRING_LIST>
-            ),
-            decltype(this), const std::string &, int, const std::string &> > > futures;
-        futures.reserve(texts.size());
-
-        for (const auto &text: texts) {
-            futures.push_back(pool->enqueue([this, &text, max_length, &padding] {
-                return this->tokenizer_ids<STRING_LIST>(text, max_length, padding);
-            }));
-        }
-
-        std::vector<std::vector<int> > input_ids;
-        input_ids.reserve(futures.size());
-        for (auto &f: futures) {
-            input_ids.push_back(f.get());
-        }
 
         return input_ids;
+    }
+
+
+    virtual std::vector<int> encode(const std::string &text, const std::string &padding = "max_length", int max_length = -1) {
+        if (max_length == -1) {
+            max_length = this->model_max_length;
+        }
+        return this->tokenizer_ids(text, max_length, padding);
+    }
+
+    virtual std::vector<std::vector<int> > batch_encode(const std::vector<std::string> &texts, const std::string &padding = "max_length", int max_length = -1, const bool parallel = true) {
+        if (max_length == -1) {
+            max_length = this->model_max_length;
+        }
+        if (parallel) {
+#ifndef _OPENMP
+            if (!this->pool) {
+                this->pool = std::make_unique<ThreadPool>();
+            }
+            std::vector<std::future<std::invoke_result_t<decltype(&std::decay_t<decltype(*this)>::tokenizer_ids
+                ),
+                decltype(this), const std::string &, int, const std::string &> > > futures;
+            futures.reserve(texts.size());
+
+            for (const auto &text: texts) {
+                futures.push_back(pool->enqueue([this, &text, max_length, &padding] {
+                    return this->tokenizer_ids(text, max_length, padding);
+                }));
+            }
+
+            std::vector<std::vector<int> > input_ids;
+            input_ids.reserve(futures.size());
+            for (auto &f: futures) {
+                input_ids.push_back(f.get());
+            }
+
+            return input_ids;
 #else
-        std::vector<std::vector<int>> input_ids(texts.size());
+            std::vector<std::vector<int>> input_ids(texts.size());
 
 #pragma omp parallel for
-        for (size_t i = 0; i < texts.size(); ++i) {
-            input_ids[i] = this->tokenizer_ids<STRING_LIST>(texts[i], max_length, padding);
-        }
+            for (size_t i = 0; i < texts.size(); ++i) {
+                input_ids[i] = this->tokenizer_ids(texts[i], max_length, padding);
+            }
 
-        return input_ids;
+            return input_ids;
 #endif
+        } else {
+            std::vector<std::vector<int> > input_ids;
+            input_ids.reserve(texts.size());
+            for (auto &text: texts) {
+                input_ids.push_back(this->encode(text, padding, max_length));
+            }
+
+            return input_ids;
+        }
     }
 };
+
 
 class FlashBertTokenizerBidirectional : public FlashBertTokenizer {
 protected:
     WordpieceBackwardTokenizer wordpiece_backward;
+    std::unique_ptr<ThreadPool> pool2{};
 
 public:
     explicit
-    FlashBertTokenizerBidirectional(const std::string &vocab_file, bool do_lower_case = true) : FlashBertTokenizer(
-                                                                                                    vocab_file, do_lower_case), wordpiece_backward(vocab, this->UNK) {
+    FlashBertTokenizerBidirectional(const std::string &vocab_file, const bool do_lower_case = true, const int model_max_length = -1) : FlashBertTokenizer(
+                                                                                                                                           vocab_file, do_lower_case, model_max_length), wordpiece_backward(vocab, this->UNK) {
+        this->pool2 = std::make_unique<ThreadPool>(2);
     }
 
-    template<typename StringList>
-    std::vector<int> tokenizer_ids(const std::string &text, int max_length, const std::string &padding) {
-        const size_t allowed_length = max_length - 1;
-        INT_LIST input_ids;
-        INIT(input_ids, static_cast<int>(max_length * 1.2));
 
-        INT_LIST i0, i1;
-        INT_LIST filtered_i0, filtered_i1;
+    std::vector<int> tokenizer_ids(const std::string &text, const int max_length, const std::string &padding) override {
+        const size_t allowed_length = max_length - 1;
+        std::vector<int> input_ids;
+        input_ids.reserve(1024);
+
+        std::vector<int> i0, i1;
+        std::vector<int> filtered_i0, filtered_i1;
+
         i0.reserve(max_length);
         i1.reserve(max_length);
         filtered_i0.reserve(max_length);
         filtered_i1.reserve(max_length);
 
         input_ids.emplace_back(this->CLS_NUM);
-        auto basic_tokens = basic.tokenize<StringList>(text);
+        auto basic_tokens = basic.tokenize(text);
         for (const auto &token: basic_tokens) {
             i0.clear();
             i1.clear();
             filtered_i0.clear();
             filtered_i1.clear();
-
-            wordpiece.tokenizer_ids(token, max_length, i0);
-            wordpiece_backward.tokenizer_ids(token, max_length, i1);
-
-            std::copy_if(i0.begin(), i0.end(), std::back_inserter(filtered_i0), [](int i) { return i > 4; });
-            std::copy_if(i1.begin(), i1.end(), std::back_inserter(filtered_i1), [](int i) { return i > 4; });
-
-            std::sort(filtered_i0.begin(), filtered_i0.end());
-            std::sort(filtered_i1.begin(), filtered_i1.end());
-
-            IDS_CONCAT(input_ids, filtered_i0 < filtered_i1 ? i0 : i1);
+            wordpiece.tokenizer_ids(token, max_length - 1, i0);
+            wordpiece_backward.tokenizer_ids(token, max_length - 1, i1);
+            if (i0 == i1) {
+                std::move(i0.begin(), i0.end(), std::back_inserter(input_ids));
+            } else {
+                std::copy_if(i0.begin(), i0.end(), std::back_inserter(filtered_i0), [](int i) { return i > 4; });
+                std::copy_if(i1.begin(), i1.end(), std::back_inserter(filtered_i1), [](int i) { return i > 4; });
+                std::vector<int> &target = compare_ids(filtered_i0, filtered_i1) ? i0 : i1;
+                std::move(target.begin(), target.end(), std::back_inserter(input_ids));
+            }
             if (input_ids.size() > allowed_length) {
                 input_ids.resize(allowed_length);
                 break;
@@ -249,46 +237,62 @@ public:
         if (padding == "max_length") {
             input_ids.resize(max_length, 0);
         }
-        return IDS_RETURN(input_ids);
-    }
-
-    std::vector<int> encode(const std::string &text, const std::string &padding, int max_length) override {
-        return this->tokenizer_ids<STRING_LIST_FAST>(text, max_length, padding);
-    }
-
-    std::vector<std::vector<int> > batch_encode(const std::vector<std::string> &texts, const std::string &padding, int max_length) override {
-#ifndef _OPENMP
-        if (!this->pool) {
-            this->pool = std::make_unique<ThreadPool>();
-        }
-        std::vector<std::future<std::invoke_result_t<decltype(&std::decay_t<decltype(*this)>::tokenizer_ids<STRING_LIST>
-            ),
-            decltype(this), const std::string &, int, const std::string &> > > futures;
-        futures.reserve(texts.size());
-
-        for (const auto &text: texts) {
-            futures.push_back(pool->enqueue([this, &text, max_length, &padding] {
-                return this->tokenizer_ids<STRING_LIST>(text, max_length, padding);
-            }));
-        }
-
-        std::vector<std::vector<int> > input_ids;
-        input_ids.reserve(futures.size());
-        for (auto &f: futures) {
-            input_ids.push_back(f.get());
-        }
-
         return input_ids;
+    }
+
+    std::vector<int> encode(const std::string &text, const std::string &padding = "max_length", int max_length = -1) override {
+        if (max_length == -1) {
+            max_length = this->model_max_length;
+        }
+        return this->tokenizer_ids(text, max_length, padding);
+    }
+
+    std::vector<std::vector<int> > batch_encode(const std::vector<std::string> &texts, const std::string &padding = "max_length", int max_length = -1, const bool parallel = true) override {
+        if (max_length == -1) {
+            max_length = this->model_max_length;
+        }
+        if (parallel) {
+#ifndef _OPENMP
+            if (!this->pool) {
+                this->pool = std::make_unique<ThreadPool>();
+            }
+            std::vector<std::future<std::invoke_result_t<decltype(&std::decay_t<decltype(*this)>::tokenizer_ids
+                ),
+                decltype(this), const std::string &, int, const std::string &> > > futures;
+            futures.reserve(texts.size());
+
+            for (const auto &text: texts) {
+                futures.push_back(pool->enqueue([this, &text, max_length, &padding] {
+                    return this->tokenizer_ids(text, max_length, padding);
+                }));
+            }
+
+            std::vector<std::vector<int> > input_ids;
+            input_ids.reserve(futures.size());
+            for (auto &f: futures) {
+                input_ids.push_back(f.get());
+            }
+
+            return input_ids;
 #else
-        std::vector<std::vector<int>> input_ids(texts.size());
+            std::vector<std::vector<int>> input_ids(texts.size());
 
 #pragma omp parallel for
-        for (size_t i = 0; i < texts.size(); ++i) {
-            input_ids[i] = this->tokenizer_ids<STRING_LIST>(texts[i], max_length, padding);
-        }
+            for (size_t i = 0; i < texts.size(); ++i) {
+                input_ids[i] = this->tokenizer_ids(texts[i], max_length, padding);
+            }
 
-        return input_ids;
+            return input_ids;
 #endif
+        } else {
+            std::vector<std::vector<int> > input_ids;
+            input_ids.reserve(texts.size());
+            for (auto &text: texts) {
+                input_ids.push_back(this->encode(text, padding, max_length));
+            }
+
+            return input_ids;
+        }
     }
 };
 

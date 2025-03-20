@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-set(PROJECT_VERSION_STR 1.0.4)
+set(PROJECT_VERSION_STR 1.1.0)
 
 project(flash_tokenizer VERSION ${PROJECT_VERSION_STR})
 set(CMAKE_CXX_STANDARD 17)
@@ -29,15 +29,12 @@ endif ()
 option(BUILD_EXECUTABLE "Build the executable" ON)
 option(BUILD_PYTHON_MODULE "Build the Python module" ON)
 
-
+find_package(OpenMP)
 #file(GLOB SRC_FILES "src/*.cpp")
 
 set(SRC_FILES src/bert_tokenizer.cpp)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    if (WIN32)
-        find_package(OpenMP)
-    endif ()
     set(COMPILE_OPTIONS -Ofast -funroll-loops -floop-nest-optimize)
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     add_compile_options(-Wno-deprecated-declarations)
@@ -61,23 +58,28 @@ if (BUILD_PYTHON_MODULE)
     list(APPEND CMAKE_PREFIX_PATH "${_pybind11_cmake_dir}")
     find_package(pybind11 REQUIRED)
 
-    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-        if (WIN32)
-            if (OpenMP_CXX_FOUND)
-                target_link_libraries(bert_tokenizer PRIVATE OpenMP::OpenMP_CXX)
-            endif ()
-        endif ()
-    endif ()
+#    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    #        if (WIN32)
+    #            if (OpenMP_CXX_FOUND)
+    #                target_link_libraries(bert_tokenizer PRIVATE OpenMP::OpenMP_CXX)
+    #            endif ()
+    #        endif ()
+    #    endif ()
+
 
     add_library(bert_tokenizer STATIC
             ${SRC_FILES}
-            include/allocator.h
     )
     target_include_directories(bert_tokenizer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 
     pybind11_add_module(_core python/src/bindings.cpp)
     target_link_libraries(_core PRIVATE bert_tokenizer)
+
+    if (OpenMP_CXX_FOUND)
+        target_link_libraries(_core PRIVATE OpenMP::OpenMP_CXX)
+    endif ()
+
     target_compile_options(_core PRIVATE ${COMPILE_OPTIONS})
     target_compile_definitions(_core PRIVATE VERSION_INFO=${PROJECT_VERSION})
 
@@ -89,12 +91,16 @@ if (BUILD_EXECUTABLE)
     add_executable(flash_tokenizer main.cpp ${SRC_FILES})
     target_include_directories(flash_tokenizer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-        if (WIN32)
-            if (OpenMP_CXX_FOUND)
-                target_link_libraries(flash_tokenizer PRIVATE OpenMP::OpenMP_CXX)
-            endif ()
-        endif ()
+#    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+#        if (WIN32)
+#            if (OpenMP_CXX_FOUND)
+#                target_link_libraries(flash_tokenizer PRIVATE OpenMP::OpenMP_CXX)
+#            endif ()
+#        endif ()
+#
+#    endif ()
+    if (OpenMP_CXX_FOUND)
+        target_link_libraries(flash_tokenizer PRIVATE OpenMP::OpenMP_CXX)
     endif ()
     target_compile_options(flash_tokenizer PRIVATE ${COMPILE_OPTIONS})
 endif ()

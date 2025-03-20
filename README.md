@@ -5,7 +5,7 @@
   </picture>
 </p>
 <h1 align="center">
-The world's fastest tokenizer library!
+The world's fastest CPU tokenizer library!
 </h1>
 
 
@@ -22,8 +22,20 @@ https://github.com/user-attachments/assets/1e399a7f-4173-43b6-8635-5b8828329ca2
 
 
 > [!NOTE]  
-> `FlashBertTokenizer` is 4x faster than `transformers.BertTokenizerFast` and 15.5x faster than `transformers.BertTokenizer`.
+> ### Why?
+> - We need a tokenizer that is faster, more accurate, and easier to use than [Huggingface's BertTokenizerFast](https://github.com/huggingface/transformers/blob/main/src/transformers/models/bert/tokenization_bert_fast.py). [^ex1] [^ex2] [^ex3]
+> - [PaddleNLP's BertTokenizerFast](https://paddlenlp.readthedocs.io/en/stable/_modules/paddlenlp/experimental/faster_tokenizer.html) achieves a 1.2x performance improvement by implementing [Huggingface's Rust version](https://github.com/huggingface/tokenizers) in `C++`.  However, using it requires installing both the massive [PaddlePaddle](https://github.com/PaddlePaddle/Paddle) and [PaddleNLP](https://github.com/PaddlePaddle/PaddleNLP) packages.
+> - [Tensorflow-text's FastBertTokenizer](https://www.tensorflow.org/text/api_docs/python/text/FastBertTokenizer) actually demonstrates slower performance in comparison.
+> - [Microsoft's Blingfire](https://github.com/microsoft/BlingFire) **takes over 8 hours** to train on custom data and shows relatively lower accuracy.
+> - [Rapid's cuDF](https://github.com/rapidsai/cudf) provides a GPU-based BertTokenizer, but it suffers from accuracy issues.
+> - Unfortunately, [FastBertTokenizer](https://github.com/georg-jung/FastBertTokenizer) and [BertTokenizers](https://github.com/NMZivkovic/BertTokenizers) developed in `C#` and cannot be used in `Python`.
+> *(As a side note, I don't know C#, but I believe once something is implemented in C#, it shouldn't have "Fast" in its name.)*
+>
+> - This is why we developed `FlashTokenizer`. It can be easily installed via `pip` and is **developed in C++ for straightforward maintenance**. Plus, it guarantees extremely fast speeds. We've created an implementation that's faster than Blingfire and easier to use. FlashTokenizer is implemented using the **LinMax Tokenizer** proposed in [Fast WordPiece Tokenization](https://arxiv.org/abs/2012.15524), enabling tokenization in linear time. Finally It supports **parallel processing at the C++ level for batch encoding**, delivering outstanding speed.
+> 
 
+
+* Requires: [^ex1]: [link1](https://stackoverflow.com/questions/75595699/huggingfaces-berttokenizerfast-is-between-39000-and-258300-times-slower-than-ex),  [^ex2]: [link2](https://github.com/PaddlePaddle/PaddleNLP/issues/8565),  [^ex3]: [link3](https://blog.csdn.net/xhw205/article/details/129578988)
 
 
 <p align="center">
@@ -56,10 +68,65 @@ https://github.com/user-attachments/assets/1e399a7f-4173-43b6-8635-5b8828329ca2
 > * Although it's only implemented as a single thread, it's capable of 40K RPS in C++ and 25K RPS in Python, and it's thread-safe, so you can go even faster with multi-threading if you need to.
 
 
+
 ## News
 
+ ![](./assets/perftest.png)
+
+ <details>
+ <summary> 🔥 Performace results </summary>
+
+## Performace
+
+
+
+### bert-base-cased
+
+| Tokenizer                      | Elapsed Time | texts     | Accuracy |
+| ------------------------------ | ------------ | --------- | -------- |
+| BertTokenizerFast(Huggingface) | 84.3700s     | 1,000,000 | 99.9226% |
+| BertTokenizerFast(PaddleNLP)   | 75.6551s     | 1,000,000 | 99.9226% |
+| FastBertTokenizer(Tensorflow)  | 219.1259s    | 1,000,000 | 99.9160% |
+| Blingfire                      | 13.6183s     | 1,000,000 | 99.8991% |
+| FlashBertTokenizer             | 8.1968s      | 1,000,000 | 99.8216% |
+
+### bert-base-uncased
+
+| Tokenizer                      |   Elapsed Time |     texts |   Accuracy |
+|--------------------------------|----------------|-----------|------------|
+| BertTokenizerFast(Huggingface) |       91.7882s | 1,000,000 |   99.9326% |
+| BertTokenizerFast(PaddleNLP)   |       83.6839s | 1,000,000 |   99.9326% |
+| FastBertTokenizer(Tensorflow)  |      204.2240s | 1,000,000 |   99.1379% |
+| Blingfire                      |       13.2374s | 1,000,000 |   99.8588% |
+| FlashBertTokenizer             |        7.6313s | 1,000,000 |   99.6884% |
+
+### bert-base-multilingual-cased
+
+| Tokenizer                      |   Elapsed Time |     texts |   Accuracy |
+|--------------------------------|----------------|-----------|------------|
+| BertTokenizerFast(Huggingface) |      215.5677s | 2,000,000 |   99.7964% |
+| BertTokenizerFast(PaddleNLP)   |      201.5091s | 2,000,000 |   99.7964% |
+| FastBertTokenizer(Tensorflow)  |      440.9711s | 2,000,000 |   99.7892% |
+| Blingfire                      |       45.7800s | 2,000,000 |   99.9780% |
+| FlashBertTokenizer             |       30.9894s | 2,000,000 |   99.8970% |
+
+ </details>
+
 > [!IMPORTANT]  
-> **[Mar 18 2025]** Improvements to the accuracy of the BasicTokenizer have improved the overall accuracy and, in particular, produce more accurate results for Unicode input.
+> **[Mar 21 2025]**
+> - Improving Tokenizer Accuracy
+> 
+> **[Mar 19 2025]** 
+> - Memory reduction and slight performance improvement by applying LinMaxMatching from [Aho–Corasick](https://en.wikipedia.org/wiki/Aho%E2%80%93Corasick_algorithm) algorithm.
+> - Improved branch pipelining of all functions and force-inline applied.
+> - Removed unnecessary operations of `WordpieceTokenizer(Backward)`.
+> - Optimizing all functions to operate except for [Bloom filter](https://en.wikipedia.org/wiki/Bloom_filter) is faster than caching.
+> - `punctuation`,` control`, and `whitespace` are defined as constexprs in advance and used as Bloom filters.
+> - Reduce unnecessary memory allocation with statistical memory profiling.
+> -  In ✨FlashTokenizer✨, `bert-base-uncased` can process **35K** texts per second on a single core, with an approximate processing time of **28ns** per text.
+> 
+> **[Mar 18 2025]** 
+> - Improvements to the accuracy of the BasicTokenizer have improved the overall accuracy and, in particular, produce more accurate results for Unicode input.
 > 
 > |Dataset|ElapsedTime(s)<br> V0.9 ➡️ V1.0|Accuracy(%)<br> V0.9 ➡️ V1.0|Texts|
 > |-|-|-|-|
@@ -70,10 +137,12 @@ https://github.com/user-attachments/assets/1e399a7f-4173-43b6-8635-5b8828329ca2
 > |splade_normal|8.83308 ➡️ 11.3714|**95.1307** ➡️ **98.7113** 🔺|5,259,200|
 > |splade_uniform|1.05303 ➡️ 1.37461|**94.7277** ➡️ **98.5300** 🔺|435,178|
 >
->**[Mar 14 2025]** The performance of the `WordPieceTokenizer` and `WordPieceBackwordTokenizer` has been improved using [Trie](https://en.wikipedia.org/wiki/Trie), which was introduced in [Fast WordPiece Tokenization](https://arxiv.org/abs/2012.15524).
-> Using `FastPoolAllocator` in `std::list` improves performance in SingleEncoding, but it is not thread-safe, so `std::list<std::string>` is used as is in BatchEncoding. In BatchEncoding, `OPENMP` is completely removed and only `std::thread` is used.
+>**[Mar 14 2025]** 
+> - The performance of the `WordPieceTokenizer` and `WordPieceBackwordTokenizer` has been improved using [Trie](https://en.wikipedia.org/wiki/Trie), which was introduced in [Fast WordPiece Tokenization](https://arxiv.org/abs/2012.15524).
+> - Using `FastPoolAllocator` in `std::list` improves performance in SingleEncoding, but it is not thread-safe, so `std::list<std::string>` is used as is in BatchEncoding. In BatchEncoding, `OPENMP` is completely removed and only `std::thread` is used.
 > 
-> **[Mar 10 2025]** Performance improvements through faster token mapping with robin_hood and memory copy minimization with **std::list**.
+> **[Mar 10 2025]** 
+> - Performance improvements through faster token mapping with robin_hood and memory copy minimization with **std::list**.
 > 
 >| Container   | Elapsed Time | Max RPS | Description                                                  |
 > | ----------- | ------------ | ------- | ------------------------------------------------------------ |
@@ -115,9 +184,9 @@ https://github.com/user-attachments/assets/1e399a7f-4173-43b6-8635-5b8828329ca2
 ## 1. Installation
 
 ### Requirements
-
- * g++ / clang++ / MSVC
- * python3.9 ~ 3.12
+ * `Windows(AMD64)`, `MacOS(ARM64)`, `Ubuntu(x86-64)` .
+ * `g++` / `clang++` / `MSVC`.
+ * python 3.9 ~ 3.12.
 
 ### Install from [PIP](https://pypi.org/project/flash-tokenizer/)
 ```bash
@@ -269,13 +338,13 @@ Surprisingly, the performance of `tensorflow-text` is much faster than before. H
 | Tokenizer             | Elapsed Time (s) |   titles | Accuracy (%) |
 |-----------------------|----------------|----------|------------|
 | [BidirectionalBertTokenizer](https://github.com/snunlp/KR-BERT/blob/master/krbert_tensorflow/tokenization_ranked.py)| 193.1238|404,464|100(baseline)|
-|FlashBertTokenizerBidirectional|~~17.8542~~ ➡️ **9.41044** 🔺|404,464|99.9913|
+|✨FlashBertTokenizer<br>Bidirectional|~~17.8542~~ ➡️ ~~9.41044~~ ➡️ **10.2175** 🔻|404,464|~~99.9913~~ ➡️ **99.8539** 🔻|
 
 ### KcBert_base
 
 | Tokenizer             |   Elapsed Time |   titles |   Accuracy |
 |-----------------------|----------------|----------|------------|
-| ✨ **BertTokenizerFlash**    |  7.9542 |  1,000,000 |    99.5792|
+| ✨ **BertTokenizerFlash**    |  ~~7.9542~~ ➡️ **3.0285** |  1,000,000 |    ~~99.5792~~ ➡️ **99.9225**|
 | BertTokenizerFast(PP) |        38.3839 |  1,000,000 |    99.9995 |
 | BertTokenizerFast(HF) |        49.0197 |  1,000,000 |    99.9995 |
 | FastBertTokenizer(TF) |       188.633  |  1,000,000 |    99.9826 |
@@ -354,6 +423,9 @@ FlashBertTokenizer can be used with any framework.  CUDA version compatibility f
 
 ## 7. GPU Tokenizer
 
+Here is an example of installing and running cuDF in [Run State of the Art NLP Workloads at Scale with RAPIDS, HuggingFace, and Dask](https://developer.nvidia.com/blog/run-state-of-the-art-nlp-workloads-at-scale-with-rapids-huggingface-and-dask/#:~:text=,and%20then%20used%20in%20subsequent).
+*(It's incredibly fast)*
+
 You can run WordPiece Tokenizer on GPUs on [rapids(cudf)](https://docs.rapids.ai/).
  * [Implemention](https://github.com/rapidsai/cudf/blob/0e99ec3ec15b8b0ebe68bd884c7d22d600e9259e/python/cudf/cudf/core/wordpiece_tokenize.py#L10)
  * [Example](https://github.com/rapidsai/cudf/blob/0e99ec3ec15b8b0ebe68bd884c7d22d600e9259e/python/cudf/cudf/tests/text/test_subword_tokenizer.py#L244)
@@ -366,6 +438,12 @@ As you can see in [how to install rapids](https://docs.rapids.ai/install/), it o
 - [x] BatchEncoder with Multithreading. 
 - [ ] ~~CUDA Version.~~
 - [x] Replace `std::list` to `boost::intrusive::list`.
+- [ ] [MaxMatch-Dropout: Subword Regularization for WordPiece](https://arxiv.org/abs/2209.04126) Option.
+- [ ] SIMD
+- [ ] Use stack memory for reduce memory allocation. (C-Style, [alloca](https://man7.org/linux/man-pages/man3/alloca.3.html), [_alloca](https://learn.microsoft.com/ko-kr/cpp/c-runtime-library/reference/alloca?view=msvc-170))
+- [ ] Support for parallel processing option for single encode.
+- [ ] `circle.ai`
+  - [ ] Implement distribution of compiled wheel packages for installation.
 
 
 ## Implemention Problem
@@ -378,12 +456,24 @@ As you can see in [how to install rapids](https://docs.rapids.ai/install/), it o
 > * `std::pmr::list<std::pmr::string>`
 >
 > Using robbin_hood's fastest unordered_flat_map as a cache for BasicTokenizer and WordpieceTokenizer actually makes them slower, despite 95% cache hits, due to access time.
+> 
+> 💬 Solved!
+> 
 
 
 
 ## Acknowledgement
 
 FlashTokenizer is inspired by [FlashAttention](https://github.com/Dao-AILab/flash-attention), [FlashInfer](https://github.com/flashinfer-ai/flashinfer), [FastBertTokenizer](https://github.com/georg-jung/FastBertTokenizer) and [tokenizers-cpp](https://github.com/mlc-ai/tokenizers-cpp) projects.
+
+
+
+## Performance comparison
+
+* https://fastberttokenizer.gjung.com/ (C# Impl)
+* https://github.com/huggingface/tokenizers (Rust Impl)
+* BPE
+  * https://github.com/openai/tiktoken
 
 
 ## References

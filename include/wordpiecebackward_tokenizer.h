@@ -51,11 +51,11 @@ public:
         : WordpieceTokenizer(vocab_, unk, max_chars) {
     }
 
-    OPTIMIZED void tokenizer_ids(const std::string &token, int max_length, INT_LIST &input_ids) const override {
+    FORCE_INLINE int tokenizer_ids(const std::string &token, const int max_length, std::vector<int> &input_ids) const override {
         const size_t token_size = token.size();
-        if (token_size > static_cast<size_t>(max_length)) {
-            input_ids.push_back(UNK_NUM);
-            return;
+        if (token_size > static_cast<size_t>(max_length) && input_ids.size() < max_length) {
+            input_ids.emplace_back(this->UNK_NUM);
+            return input_ids.size();
         }
         const size_t original_size = input_ids.size();
         size_t pos = token_size;
@@ -72,7 +72,7 @@ public:
                     auto [m_len, m_idx] = initialTrie.search(candidate, 0);
                     if (m_idx != -1 && m_len == candidate.size()) {
                         found = true;
-                        temp_ids.push_back(m_idx);
+                        temp_ids.emplace_back(m_idx);
                         new_pos = i;
                         break;
                     }
@@ -81,7 +81,7 @@ public:
                     auto [m_len, m_idx] = suffixTrie.search(candidate, 0);
                     if (m_idx != -1 && m_len == candidate.size()) {
                         found = true;
-                        temp_ids.push_back(m_idx);
+                        temp_ids.emplace_back(m_idx);
                         new_pos = i;
                         break;
                     }
@@ -89,12 +89,24 @@ public:
             }
             if (!found) {
                 input_ids.resize(original_size);
-                input_ids.push_back(vocab.get(UNK));
-                return;
+                if (input_ids.size() < max_length)
+                    input_ids.emplace_back(vocab.get(UNK));
+
+                return input_ids.size();
             }
             pos = new_pos;
         }
-        input_ids.insert(input_ids.end(), temp_ids.rbegin(), temp_ids.rend());
+        size_t current_size = input_ids.size();
+        size_t space_left = 0;
+
+        if (current_size < max_length) {
+            space_left = max_length - current_size;
+        }
+        size_t tokens_to_add = std::min(temp_ids.size(), space_left);
+        if (tokens_to_add > 0) {
+            input_ids.insert(input_ids.end(), temp_ids.rbegin(), temp_ids.rbegin() + tokens_to_add);
+        }
+        return input_ids.size();
     }
 };
 
@@ -106,7 +118,7 @@ public:
         : WordpieceTokenizer(vocab_, unk, max_chars) {
     }
 
-    void tokenizer_ids(const std::string &token, int max_length, INT_LIST &input_ids) const override {
+    FORCE_INLINE int  tokenizer_ids(const std::string &token, int max_length, INT_LIST &input_ids) const override {
         if (token.size() > static_cast<size_t>(max_length)) {
             input_ids.push_back(this->UNK_NUM);
         }
@@ -134,11 +146,12 @@ public:
             if (!found) {
                 input_ids.resize(original_size);
                 input_ids.push_back(vocab.get(UNK));
-                return;
+                return 0;
             }
             pos = new_pos;
         }
         input_ids.insert(input_ids.end(), temp_ids.rbegin(), temp_ids.rend());
+        return 0;
     }
 };
 #endif
