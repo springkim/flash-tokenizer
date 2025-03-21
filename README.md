@@ -12,7 +12,7 @@ The world's fastest CPU tokenizer library!
 
 ## EFFICIENT AND OPTIMIZED TOKENIZER ENGINE FOR LLM INFERENCE SERVING
 
-[FlashTokenizer](https://pypi.org/project/flash-tokenizer/) is a **high-performance tokenizer implementation in C++ of the BertTokenizer used for LLM inference**. It has the highest speed and accuracy of any tokenizer, such as [FlashAttention](https://github.com/Dao-AILab/flash-attention) and [FlashInfer](https://github.com/flashinfer-ai/flashinfer), and is 9~11 times faster than `BertTokenizerFast` in transformers.
+[FlashTokenizer](https://pypi.org/project/flash-tokenizer/) is a **high-performance tokenizer implementation in C++ of the BertTokenizer used for LLM inference**. It has the highest speed and accuracy of any tokenizer, such as [FlashAttention](https://github.com/Dao-AILab/flash-attention) and [FlashInfer](https://github.com/flashinfer-ai/flashinfer), and is **10 times faster** than `BertTokenizerFast` in transformers.
 
 
 
@@ -132,10 +132,10 @@ pip install .
 ## 2. Usage
 
 ```python
-from flash_tokenizer import FlashBertTokenizer
-tokenizer = FlashBertTokenizer("path/to/vocab.txt", do_lower_case=True)
+from flash_tokenizer import BertTokenizerFlash
+tokenizer = BertTokenizerFlash("path/to/vocab.txt", do_lower_case=True)
 # Tokenize text
-ids = tokenizer("Hello, world!")
+ids = tokenizer("Hello, World!", max_length=300, padding="longest").input_ids
 print(ids)
 ```
 
@@ -220,8 +220,7 @@ Accuracy is the result of measuring [google's BertTokenizerFast](https://github.
 </p>
 
 
-<details>
-<summary> Tokenizer Performance Comparison </summary>
+### Tokenizer Performance Comparison 
 
 #### [google-bert/bert-base-cased](https://huggingface.co/google-bert/bert-base-cased)
 
@@ -275,8 +274,6 @@ Accuracy is the result of measuring [google's BertTokenizerFast](https://github.
 | BertTokenizerBidirectional(KR-BERT Original) |      128.3320s | 1,000,000 |  100.0000% |
 | **FlashBertTokenizer(Bidirectional)**                           |       10.4492s | 1,000,000 |   99.9631% |
 
-
-</details>
 
 
 ```mermaid
