@@ -349,6 +349,10 @@ FlashTokenizer is inspired by [FlashAttention](https://github.com/Dao-AILab/flas
   * https://github.com/openai/tiktoken
 
 
+
+[![Star History Chart](https://api.star-history.com/svg?repos=NLPOptimize/flash-tokenizer&type=Date)](https://www.star-history.com/#NLPOptimize/flash-tokenizer&Date)
+
+
 ## References
 
 * https://medium.com/@techhara/which-bert-tokenizer-is-faster-b832aa978b46
