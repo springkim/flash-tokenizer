@@ -36,3 +36,11 @@
 //
 #include "bert_tokenizer.h"
 
+class premain {
+public:
+    premain() {
+        if (accent_mapping.empty()) {
+            accent_mapping = initializeCharMap();
+        }
+    }
+} _premain;

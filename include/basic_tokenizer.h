@@ -42,22 +42,22 @@
 class BasicTokenizer {
 public:
     const bool do_lower_case;
+    using SplitFunction = void (*)(std::string_view, std::vector<std::string> &);
+    const SplitFunction split_function[2] = {run_split_on_punc, run_split_on_punc_do_lower};
 
     explicit BasicTokenizer(const bool lower_case = true)
         : do_lower_case(lower_case) {
     }
 
     [[nodiscard]] std::vector<std::string> tokenize(const std::string &text) const {
-        using SplitFunction = void (*)(std::string_view, std::vector<std::string> &);
-        const SplitFunction split_function = this->do_lower_case ? run_split_on_punc_do_lower : run_split_on_punc;
-        //const std::string &&cleaned = clean_text(text);
-        //const std::string &&tokenized = tokenize_chinese_chars(cleaned);
+        //const SplitFunction split_function = this->do_lower_case ? run_split_on_punc_do_lower : run_split_on_punc;
+        //const SplitFunction split_function = run_split_on_punc;
         const std::string &tokenized = clean_and_tokenize(text);
         const std::vector<std::string> &orig_tokens = whitespace_tokenize(tokenized);
         std::vector<std::string> output_tokens;
         output_tokens.reserve(1024);
         for (const auto &token: orig_tokens) {
-            split_function(token, output_tokens);
+            this->split_function[this->do_lower_case](token, output_tokens);
         }
         return output_tokens;
     }

@@ -184,8 +184,7 @@ FORCE_INLINE std::string to_lower_case_and_strip_accents(const std::string_view 
         if (cp < 128) {
             result.push_back(lower_map[static_cast<unsigned char>(text[i])]);
         } else {
-            auto it = accent_mapping.find(cp);
-            if (it != accent_mapping.end()) {
+            if (auto it = accent_mapping.find(cp); it != accent_mapping.end()) {
                 result.append(it->second);
             } else {
                 result.append(text.data() + i, len);
@@ -196,47 +195,6 @@ FORCE_INLINE std::string to_lower_case_and_strip_accents(const std::string_view 
 
     return result;
 }
-
-// FORCE_INLINE std::string to_lower_case(const std::string_view &text) {
-//     static constexpr std::array<char, 128> lower_map = [] {
-//         std::array<char, 128> map{};
-//         for (size_t i = 0; i < 128; ++i)
-//             map[i] = (i >= 'A' && i <= 'Z') ? static_cast<char>(i + 32) : static_cast<char>(i);
-//         return map;
-//     }();
-//     std::string result;
-//     result.reserve(text.size());
-//     for (size_t i = 0; i < text.size();) {
-//         const int cp = utf8_to_codepoint(text, i);
-//         const size_t len = utf8_char_length(text[i]);
-//         if (cp < 128)
-//             result.push_back(lower_map[static_cast<unsigned char>(text[i])]);
-//         else
-//             result.append(text.data() + i, len);
-//         i += len;
-//     }
-//     return result;
-// }
-//
-// FORCE_INLINE std::string run_strip_accents(const std::string_view &text) {
-//     std::string output;
-//     output.reserve(text.size());
-//     for (size_t i = 0; i < text.size();) {
-//         int cp = utf8_to_codepoint(text, i);
-//         size_t char_len = utf8_char_length(text[i]);
-//         auto it = accent_mapping.find(cp);
-//         if (it != accent_mapping.end()) {
-//             output.append(it->second);
-//         } else if (cp < 128 && text[i] >= 'A' && text[i] <= 'Z') {
-//             output.push_back(text[i] + 32);
-//         } else {
-//             output.append(text.data() + i, char_len);
-//         }
-//         i += char_len;
-//     }
-//     return output;
-// }
-
 
 FORCE_INLINE bool is_chinese_char(const int &cp) {
     if (cp >= 0x4E00 && cp <= 0x9FFF) return true;
@@ -251,56 +209,6 @@ FORCE_INLINE bool is_chinese_char(const int &cp) {
     return false;
 }
 
-
-[[nodiscard]] FORCE_INLINE std::string tokenize_chinese_chars(const std::string &text) {
-    bool has_chinese = false;
-    for (size_t i = 0; i < text.size();) {
-        if (const int &cp = utf8_to_codepoint(text, i); is_chinese_char(cp)) {
-            has_chinese = true;
-            break;
-        }
-        i += utf8_char_length(text[i]);
-    }
-    if (!has_chinese) {
-        return text;
-    }
-    std::string output;
-    output.reserve(text.size());
-
-    for (size_t i = 0; i < text.size();) {
-        const int cp = utf8_to_codepoint(text, i);
-        const size_t char_len = utf8_char_length(text[i]);
-        if (!is_chinese_char(cp)) {
-            output.append(text, i, char_len);
-        } else {
-            output += ' ';
-            output.append(text, i, char_len);
-            output += ' ';
-        }
-        i += char_len;
-    }
-    return output;
-}
-
-[[nodiscard]] FORCE_INLINE std::string clean_text(const std::string &text) {
-    std::string output;
-
-    for (size_t i = 0; i < text.size();) {
-        const int cp = utf8_to_codepoint(text, i);
-        const size_t char_len = utf8_char_length(text[i]);
-        if (cp == 0 || cp == 0xfffd || cp == 0x2028 || cp == 0x2029 || is_control_cp(cp)) {
-            i += char_len;
-            continue;
-        }
-        if (!is_whitespace_cp(cp)) {
-            output.append(text, i, char_len);
-        } else {
-            output += ' ';
-        }
-        i += char_len;
-    }
-    return output;
-}
 
 [[nodiscard]] FORCE_INLINE std::string clean_and_tokenize(const std::string &text) {
     std::string output;
@@ -330,11 +238,9 @@ FORCE_INLINE void run_split_on_punc(const std::string_view text, std::vector<std
     const size_t sz = text.size();
     size_t i = 0, word_start = 0;
     bool in_word = false, has_punc = false;
-    //std::cout << text << std::endl;
     while (i < sz) {
         const int cp = utf8_to_codepoint(text, i);
         const size_t len = utf8_char_length(text[i]);
-        //std::cout << cp << "\t" << is_punctuation_cp(cp) << std::endl;
         if (is_punctuation_cp(cp)) {
             has_punc = true;
             if (in_word) {
@@ -360,8 +266,6 @@ FORCE_INLINE void run_split_on_punc(const std::string_view text, std::vector<std
 
 
 FORCE_INLINE void run_split_on_punc_do_lower(const std::string_view text, std::vector<std::string> &output) {
-    //const std::string &&lower_text = to_lower_case(text);
-    //const std::string &&processed_text = run_strip_accents(lower_text);
     const std::string &&processed_text = to_lower_case_and_strip_accents(text);
     run_split_on_punc(processed_text, output);
 }

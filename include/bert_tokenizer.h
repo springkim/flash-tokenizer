@@ -95,9 +95,6 @@ public:
         this->SEP_NUM = vocab.get(this->SEP);
         this->UNK_NUM = vocab.get(this->UNK);
         this->_version_ = cpp_env(VERSION_INFO);
-        if (accent_mapping.empty()) {
-            accent_mapping = initializeCharMap();
-        }
     }
 
     virtual ~FlashBertTokenizer() = default;
@@ -163,7 +160,7 @@ public:
 
             return input_ids;
 #else
-            std::vector<std::vector<int>> input_ids(texts.size());
+            std::vector<std::vector<int> > input_ids(texts.size());
 
 #pragma omp parallel for
             for (size_t i = 0; i < texts.size(); ++i) {
@@ -275,7 +272,7 @@ public:
 
             return input_ids;
 #else
-            std::vector<std::vector<int>> input_ids(texts.size());
+            std::vector<std::vector<int> > input_ids(texts.size());
 
 #pragma omp parallel for
             for (size_t i = 0; i < texts.size(); ++i) {

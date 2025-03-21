@@ -16,7 +16,7 @@
 #include "env.h"
 
 #include"debugging.h"
-#define DATASET_NUMBER 8
+#define DATASET_NUMBER 1
 
 #if DATASET_NUMBER == 1
 // KCBERT_BASE
@@ -51,7 +51,7 @@
 #define MAX_LENGTH 300
 #define DO_LOWER false
 using TokenizerClass = FlashBertTokenizer;
-std::string DATASET_NAME="kcbert_base";
+std::string DATASET_NAME = "kcbert_base";
 #endif
 
 #ifdef DEEPCT
@@ -156,7 +156,7 @@ std::vector<int> parseNumbersFromString(const std::string_view input) {
     numbers.reserve(100);
     const char *str = input.data();
     const char *const end = str + input.length();
-    const char *open_bracket = static_cast<const char *>(memchr(str, '[', end - str));
+    const auto open_bracket = static_cast<const char *>(memchr(str, '[', end - str));
     if (!open_bracket) return numbers;
     str = open_bracket + 1;
 

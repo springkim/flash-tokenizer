@@ -5,6 +5,7 @@
 #include <string>
 #include "defines.h"
 
+
 FORCE_INLINE std::string codePointToUTF8(int codePoint) {
     std::string result;
 
@@ -1919,5 +1920,7 @@ static robin_hood::unordered_flat_map<int, std::string> initializeCharMap() {
     charMap[0x1e921] = codePointToUTF8(0x1e943); //
     return std::move(charMap);
 }
+
+
 
 #endif
