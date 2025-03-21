@@ -12,18 +12,13 @@ The world's fastest CPU tokenizer library!
 
 ## EFFICIENT AND OPTIMIZED TOKENIZER ENGINE FOR LLM INFERENCE SERVING
 
-[FlashTokenizer](https://pypi.org/project/flash-tokenizer/) is a high-performance tokenizer implementation in C++ of the BertTokenizer used for LLM inference. It has the highest speed and accuracy of any tokenizer, such as [FlashAttention](https://github.com/Dao-AILab/flash-attention) and [FlashInfer](https://github.com/flashinfer-ai/flashinfer), and is 4-5 times faster than BertTokenizerFast in transformers.
-
-
-
-
-https://github.com/user-attachments/assets/1e399a7f-4173-43b6-8635-5b8828329ca2
+[FlashTokenizer](https://pypi.org/project/flash-tokenizer/) is a **high-performance tokenizer implementation in C++ of the BertTokenizer used for LLM inference**. It has the highest speed and accuracy of any tokenizer, such as [FlashAttention](https://github.com/Dao-AILab/flash-attention) and [FlashInfer](https://github.com/flashinfer-ai/flashinfer), and is 9~11 times faster than `BertTokenizerFast` in transformers.
 
 
 
 > [!NOTE]  
 > ### Why?
-> - We need a tokenizer that is faster, more accurate, and easier to use than [Huggingface's BertTokenizerFast](https://github.com/huggingface/transformers/blob/main/src/transformers/models/bert/tokenization_bert_fast.py). [^ex1] [^ex2] [^ex3]
+> - We need a tokenizer that is faster, more accurate, and easier to use than [Huggingface's BertTokenizerFast](https://github.com/huggingface/transformers/blob/main/src/transformers/models/bert/tokenization_bert_fast.py). ([link1](https://stackoverflow.com/questions/75595699/huggingfaces-berttokenizerfast-is-between-39000-and-258300-times-slower-than-ex), [link2](https://github.com/PaddlePaddle/PaddleNLP/issues/8565), [link3](https://blog.csdn.net/xhw205/article/details/129578988))
 > - [PaddleNLP's BertTokenizerFast](https://paddlenlp.readthedocs.io/en/stable/_modules/paddlenlp/experimental/faster_tokenizer.html) achieves a 1.2x performance improvement by implementing [Huggingface's Rust version](https://github.com/huggingface/tokenizers) in `C++`.  However, using it requires installing both the massive [PaddlePaddle](https://github.com/PaddlePaddle/Paddle) and [PaddleNLP](https://github.com/PaddlePaddle/PaddleNLP) packages.
 > - [Tensorflow-text's FastBertTokenizer](https://www.tensorflow.org/text/api_docs/python/text/FastBertTokenizer) actually demonstrates slower performance in comparison.
 > - [Microsoft's Blingfire](https://github.com/microsoft/BlingFire) **takes over 8 hours** to train on custom data and shows relatively lower accuracy.
@@ -35,7 +30,6 @@ https://github.com/user-attachments/assets/1e399a7f-4173-43b6-8635-5b8828329ca2
 > 
 
 
-* Requires: [^ex1]: [link1](https://stackoverflow.com/questions/75595699/huggingfaces-berttokenizerfast-is-between-39000-and-258300-times-slower-than-ex),  [^ex2]: [link2](https://github.com/PaddlePaddle/PaddleNLP/issues/8565),  [^ex3]: [link3](https://blog.csdn.net/xhw205/article/details/129578988)
 
 
 <p align="center">
@@ -71,47 +65,6 @@ https://github.com/user-attachments/assets/1e399a7f-4173-43b6-8635-5b8828329ca2
 
 ## News
 
- ![](./assets/perftest.png)
-
- <details>
- <summary> 🔥 Performace results </summary>
-
-## Performace
-
-
-
-### bert-base-cased
-
-| Tokenizer                      | Elapsed Time | texts     | Accuracy |
-| ------------------------------ | ------------ | --------- | -------- |
-| BertTokenizerFast(Huggingface) | 84.3700s     | 1,000,000 | 99.9226% |
-| BertTokenizerFast(PaddleNLP)   | 75.6551s     | 1,000,000 | 99.9226% |
-| FastBertTokenizer(Tensorflow)  | 219.1259s    | 1,000,000 | 99.9160% |
-| Blingfire                      | 13.6183s     | 1,000,000 | 99.8991% |
-| FlashBertTokenizer             | 8.1968s      | 1,000,000 | 99.8216% |
-
-### bert-base-uncased
-
-| Tokenizer                      |   Elapsed Time |     texts |   Accuracy |
-|--------------------------------|----------------|-----------|------------|
-| BertTokenizerFast(Huggingface) |       91.7882s | 1,000,000 |   99.9326% |
-| BertTokenizerFast(PaddleNLP)   |       83.6839s | 1,000,000 |   99.9326% |
-| FastBertTokenizer(Tensorflow)  |      204.2240s | 1,000,000 |   99.1379% |
-| Blingfire                      |       13.2374s | 1,000,000 |   99.8588% |
-| FlashBertTokenizer             |        7.6313s | 1,000,000 |   99.6884% |
-
-### bert-base-multilingual-cased
-
-| Tokenizer                      |   Elapsed Time |     texts |   Accuracy |
-|--------------------------------|----------------|-----------|------------|
-| BertTokenizerFast(Huggingface) |      215.5677s | 2,000,000 |   99.7964% |
-| BertTokenizerFast(PaddleNLP)   |      201.5091s | 2,000,000 |   99.7964% |
-| FastBertTokenizer(Tensorflow)  |      440.9711s | 2,000,000 |   99.7892% |
-| Blingfire                      |       45.7800s | 2,000,000 |   99.9780% |
-| FlashBertTokenizer             |       30.9894s | 2,000,000 |   99.8970% |
-
- </details>
-
 > [!IMPORTANT]  
 > **[Mar 21 2025]**
 > - Improving Tokenizer Accuracy
@@ -127,15 +80,6 @@ https://github.com/user-attachments/assets/1e399a7f-4173-43b6-8635-5b8828329ca2
 > 
 > **[Mar 18 2025]** 
 > - Improvements to the accuracy of the BasicTokenizer have improved the overall accuracy and, in particular, produce more accurate results for Unicode input.
-> 
-> |Dataset|ElapsedTime(s)<br> V0.9 ➡️ V1.0|Accuracy(%)<br> V0.9 ➡️ V1.0|Texts|
-> |-|-|-|-|
-> |kcbert_base|26.946 ➡️ 31.4812|99.5839 ➡️ 99.9236|10,000,000|
-> |deepct(w/o bidirectional)|4.95804 ➡️ 7.18554|99.8442 ➡️ 99.7068|404,464|
-> |deepct(bidirectional)|9.64352 ➡️ 12.0492|99.9913 ➡️ 99.8539|404,464|
-> |splade|4.77499 ➡️ 6.05709|99.7715 ➡️ 99.7572|404,464|
-> |splade_normal|8.83308 ➡️ 11.3714|**95.1307** ➡️ **98.7113** 🔺|5,259,200|
-> |splade_uniform|1.05303 ➡️ 1.37461|**94.7277** ➡️ **98.5300** 🔺|435,178|
 >
 >**[Mar 14 2025]** 
 > - The performance of the `WordPieceTokenizer` and `WordPieceBackwordTokenizer` has been improved using [Trie](https://en.wikipedia.org/wiki/Trie), which was introduced in [Fast WordPiece Tokenization](https://arxiv.org/abs/2012.15524).
@@ -144,40 +88,12 @@ https://github.com/user-attachments/assets/1e399a7f-4173-43b6-8635-5b8828329ca2
 > **[Mar 10 2025]** 
 > - Performance improvements through faster token mapping with robin_hood and memory copy minimization with **std::list**.
 > 
->| Container   | Elapsed Time | Max RPS | Description                                                  |
-> | ----------- | ------------ | ------- | ------------------------------------------------------------ |
-> | std::list   | 10.3458      | 39660.5 | When combining containers, std::list is the fastest because it doesn't allocate extra memory and just appends to the end. |
->| std::deque  | 15.3494      | 26473.1 | Because it is organized in chunks, it requires memory allocation even when combining containers and has the slowest performance due to its low cache hit rather than contiguous memory. |
-> | std::vector | 11.9718      | 33913.3 | It allocates new memory each time when combining containers, but it has a high cache hit for fast performance. |
 > 
 > #### Token Ids Map Table Performance Test.
 > 
-> Token and Ids Map used the fastest unordered_flat_map as shown in the test results below.
->
-> | Map                                                | Elapsed Time(Access) |
->| -------------------------------------------------- | -------------------- |
-> | ✅ robin_hood::unordered_flat_map<std::string, int> | 0.914775             |
->| robin_hood::unordered_node_map<std::string, int>   | 0.961003             |
-> | robin_hood::unordered_map<std::string, int>        | 0.917136             |
->| std::unordered_map<std::string, int, XXHash>       | 1.1506               |
-> | std::unordered_map<std::string, int>               | 1.20015              |
-> 
-> XXHash is implemented as follows.
-> 
-> ```c++
-> #define XXH_STATIC_LINKING_ONLY
-> #define XXH_INLINE_ALL
->#include "xxhash.h"
-> struct XXHash {
->size_t operator()(const std::string &s) const {
->   return XXH3_64bits(s.data(), s.size());
->    }
->  };
-> ```
+> Token and Ids Map used the fastest `robin_hood::unordered_flat_map<std::string, int>`.
 >  
->    
->    
->    **[Mar 09 2025]** Completed development of flash-tokenizer for BertTokenizer.
+> **[Mar 09 2025]** Completed development of flash-tokenizer for BertTokenizer.
 
 
 
@@ -209,8 +125,7 @@ CC=gcc CXX=g++ pip install -U flash-tokenizer
 ```bash
 git clone https://github.com/NLPOptimize/flash-tokenizer
 cd flash-tokenizer
-pip install -r requirements.txt
-python -m build # `*.whl` file will be created in the `dist` folder.
+pip install .
 ```
 
 
@@ -279,101 +194,89 @@ The implementations we'll look at in detail are `PaddleNLP's BertTokenizerFast` 
   * **Disadvantages**: Long training time (8 hours) and lower accuracy than other implementations. (+Difficult to get help due to de facto development hiatus).
 * `PaddleNLP`: As shown in the experiments below, PaddleNLP is always faster than BertTokenizerFast (HF) to the same number of decimal places, and is always faster on any OS, whether X86 or Arm.
   * **Advantages**:  **Internal implementation is in C++** Compared to `transformers.BertTokenizerFast` implemented in Rust, it is 1.2x faster while outputting exactly the same values.
-    * You can't specify `pt(pytorch tensor)` in `return_tensors`, but this is not a problem.[^1]
+    * You can't specify `pt(pytorch tensor)` in `return_tensors`, but this is not a problem.
   * **Disadvantages**: none, other than the need to install PaddlePaddle and PaddleNLP.
 
 ## 4. Performance test
 
-### 4.1 Performance test (Batch text encoding)
 
+### 4.1 Performance test (Single text encoding)
 
-The graph below compares `transformers.BertTokenizerFast` and `paddlenlp.transformers.bert.tokenizer_fast.BertTokenizerFast` for batch size.
-
-Both libraries are faster to return as `np.ndarray`. Perhaps the implementations have logic to convert to `pt` or `pd` at the end, which takes longer.
-
+Accuracy is the result of measuring [google's BertTokenizerFast](https://github.com/google-research/bert/blob/master/tokenization.py) as a baseline. If even one of the `input_ids` is incorrect, the answer is considered incorrect.
 
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/NLPOptimize/flash-tokenizer/blob/main/assets/BatchTest_dark.png?raw=true">
-    <img alt="batchtest" src="https://github.com/NLPOptimize/flash-tokenizer/blob/main/assets/BatchTest_light.png?raw=true" width=100%>
-  </picture>
-</p>
-
-
-
-
-|   BatchSize |   transformers(pt) |   paddlenlp(pd) |   transformers(np) |   paddlenlp(np) |
-|-------------|--------------------|-----------------|--------------------|-----------------|
-|           1 |           2.32744  |        1.74695  |           1.87685  |        1.56597  |
-|           2 |           1.87427  |        1.53865  |           1.50911  |        1.45918  |
-|           4 |           1.54254  |        1.13622  |           1.12902  |        1.07593  |
-|           8 |           1.25432  |        0.821463 |           0.850269 |        0.798163 |
-|          16 |           1.09129  |        0.640243 |           0.67293  |        0.617309 |
-|          32 |           0.994335 |        0.528553 |           0.587379 |        0.519887 |
-|          64 |           0.971175 |        0.476652 |           0.537753 |        0.471145 |
-|         128 |           0.952003 |        0.478113 |           0.531592 |        0.451384 |
-
-[^1]: As you can see in the graph above, returning to `pt(pytorch tensor)'` becomes very slow. 
-
-### 4.2 Performance test (Single text encoding)
-
-Accuracy is the result of measuring `transformers.BertTokenizer` as a baseline. If even one of the `input_ids` is incorrect, the answer is considered incorrect.
-Surprisingly, the performance of `tensorflow-text` is much faster than before. However, there is still no advantage for `tensorflow-text' when comparing the four libraries.
-
-
-### DeepCT (BertTokenizer)
-| Tokenizer             | Elapsed Time (s) |   titles | Accuracy (%) |
-|-----------------------|----------------|----------|------------|
-| BertTokenizer(Huggingface)     |       255.651  |  404,464 |   100 (Baseline)   |
-| ✨ **BertTokenizerFlash**    | ~~19.1325~~ ➡️ ~~16.526~~ ➡️ **12.5391**🔺 |  404,464 | ~~99.3248~~ ➡️ 99.8442 🔺 |
-| BertTokenizerFast(PP) |        64.6828 |   404,464 |    99.8615 |
-| BertTokenizerFast(HF) |        69.6647 |   404,464 |    99.8615 |
-| FastBertTokenizer(TF) |        85.5056 |   404,464 |    99.8507 |
-| Blingfire             |        12.1941 |   404,464 |    96.8979 |
-
-
-### DeepCT (BidirectionalBertTokenizer)
-
-| Tokenizer             | Elapsed Time (s) |   titles | Accuracy (%) |
-|-----------------------|----------------|----------|------------|
-| [BidirectionalBertTokenizer](https://github.com/snunlp/KR-BERT/blob/master/krbert_tensorflow/tokenization_ranked.py)| 193.1238|404,464|100(baseline)|
-|✨FlashBertTokenizer<br>Bidirectional|~~17.8542~~ ➡️ ~~9.41044~~ ➡️ **10.2175** 🔻|404,464|~~99.9913~~ ➡️ **99.8539** 🔻|
-
-### KcBert_base
-
-| Tokenizer             |   Elapsed Time |   titles |   Accuracy |
-|-----------------------|----------------|----------|------------|
-| ✨ **BertTokenizerFlash**    |  ~~7.9542~~ ➡️ **3.0285** |  1,000,000 |    ~~99.5792~~ ➡️ **99.9225**|
-| BertTokenizerFast(PP) |        38.3839 |  1,000,000 |    99.9995 |
-| BertTokenizerFast(HF) |        49.0197 |  1,000,000 |    99.9995 |
-| FastBertTokenizer(TF) |       188.633  |  1,000,000 |    99.9826 |
-| Blingfire             |        13.454  |  1,000,000 |    99.9244 |
-
-
-For both `single text` and `batch text`, PaddleNLP's implementation is always faster than HuggingFace's implementation, and the results are exactly the same, so there is no unique advantage of HuggingFace's `transformers.BertTokenizerFast`.
-
-Now you may have to make a decision between `speed (blingfire) vs `balance (PaddleNLP).
-
-BertTokenizer requires a fast [single-core CPU](https://www.cpubenchmark.net/singleThread.html) to get fast results.
-
-The `flash-tokenizer`, which I implemented because I didn't like the other tokenizers, has a clear advantage in both speed and accuracy.
-
-
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/NLPOptimize/flash-tokenizer/blob/main/assets/TokenizerPerformanceGraph_dark.png?raw=true">
-    <img alt="FlashTokenizer" src="https://github.com/NLPOptimize/flash-tokenizer/blob/main/assets/TokenizerPerformanceGraph_light.png?raw=true" width=100%>
+    <source media="(prefers-color-scheme: dark)" srcset="./assets/comp_speed_dark.png">
+    <img alt="FlashTokenizer" src="./assets/comp_speed_light.png" width=100%>
   </picture>
 </p>
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/NLPOptimize/flash-tokenizer/blob/main/assets/TokenizerPerformanceBar_dark.jpg?raw=true">
-    <img alt="FlashTokenizer" src="https://github.com/NLPOptimize/flash-tokenizer/blob/main/assets/TokenizerPerformanceBar_light.jpg?raw=true" width=100%>
+    <source media="(prefers-color-scheme: dark)" srcset="./assets/comp_accuracy_dark.png">
+    <img alt="FlashTokenizer" src="./assets/comp_accuracy_light.png" width=100%>
   </picture>
 </p>
 
+
+<details>
+<summary> Tokenizer Performance Comparison </summary>
+
+#### [google-bert/bert-base-cased](https://huggingface.co/google-bert/bert-base-cased)
+
+| Tokenizer                      | Elapsed Time | texts     | Accuracy |
+|--------------------------------|----------------:|-----------:|------------:|
+| BertTokenizerFast(Huggingface) | 84.3700s     | 1,000,000 | 99.9226% |
+| BertTokenizerFast(PaddleNLP)   | 75.6551s     | 1,000,000 | 99.9226% |
+| FastBertTokenizer(Tensorflow)  | 219.1259s    | 1,000,000 | 99.9160% |
+| Blingfire                      | 13.6183s     | 1,000,000 | 99.8991% |
+| **FlashBertTokenizer**             | 8.1968s      | 1,000,000 | 99.8216% |
+
+#### [google-bert/bert-base-uncased](https://huggingface.co/google-bert/bert-base-uncased)
+
+| Tokenizer                      |   Elapsed Time |     texts |   Accuracy |
+|--------------------------------|----------------:|-----------:|------------:|
+| BertTokenizerFast(Huggingface) |       91.7882s | 1,000,000 |   99.9326% |
+| BertTokenizerFast(PaddleNLP)   |       83.6839s | 1,000,000 |   99.9326% |
+| FastBertTokenizer(Tensorflow)  |      204.2240s | 1,000,000 |   99.1379% |
+| Blingfire                      |       13.2374s | 1,000,000 |   99.8588% |
+| **FlashBertTokenizer**             |        7.6313s | 1,000,000 |   99.6884% |
+
+#### [google-bert/bert-base-multilingual-cased](https://huggingface.co/google-bert/bert-base-multilingual-cased)
+
+
+
+| Tokenizer                      | Elapsed Time | texts     | Accuracy |
+|--------------------------------|----------------:|-----------:|------------:|
+| BertTokenizerFast(Huggingface) | 212.1570s    | 2,000,000 | 99.7964% |
+| BertTokenizerFast(PaddleNLP)   | 193.9921s    | 2,000,000 | 99.7964% |
+| FastBertTokenizer(Tensorflow)  | 394.1574s    | 2,000,000 | 99.7892% |
+| Blingfire                      | 38.9013s     | 2,000,000 | 99.9780% |
+| **FlashBertTokenizer**             | 20.4570s     | 2,000,000 | 99.8970% |
+
+
+#### [beomi/kcbert-base](https://github.com/Beomi/KcBERT)
+
+| Tokenizer                      |   Elapsed Time |     texts |   Accuracy |
+|--------------------------------|----------------:|-----------:|------------:|
+| BertTokenizerFast(Huggingface) |       52.5744s | 1,000,000 |   99.6754% |
+| BertTokenizerFast(PaddleNLP)   |       44.8943s | 1,000,000 |   99.6754% |
+| FastBertTokenizer(Tensorflow)  |      198.0270s | 1,000,000 |   99.6639% |
+| Blingfire                      |       13.0701s | 1,000,000 |   99.9434% |
+| **FlashBertTokenizer**             |        5.2601s | 1,000,000 |   99.9484% |
+
+
+#### [KR-BERT](https://github.com/snunlp/KR-BERT)
+
+
+| Tokenizer                                    |   Elapsed Time |     texts |   Accuracy |
+|--------------------------------|----------------:|-----------:|------------:|
+| BertTokenizerBidirectional(KR-BERT Original) |      128.3320s | 1,000,000 |  100.0000% |
+| **FlashBertTokenizer(Bidirectional)**                           |       10.4492s | 1,000,000 |   99.9631% |
+
+
+</details>
 
 
 ```mermaid
@@ -384,19 +287,6 @@ erDiagram
     Inference o{--|| Postprocess : memcpy_d2h
 ```
 
-
-## 5. Case where the result is different from BertTokenizer 
-
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/NLPOptimize/flash-tokenizer/blob/main/assets/WrongAnswer_dark.png?raw=true">
-    <img alt="WA" src="https://github.com/NLPOptimize/flash-tokenizer/blob/main/assets/WrongAnswer_light.png?raw=true" width=100%>
-  </picture>
-</p>
-
-
-
-As can be seen from the above relationship, if `transformers.BertTokenizerFast` is wrong, then `tensorflow-text's FastBertTokenizer` and `FlashBertTokenizer` are also wrong, and the difference set between `FlashBertTokenizer` and `FastBertTokenizer(TF)` is different.
 
 
 
@@ -445,20 +335,6 @@ As you can see in [how to install rapids](https://docs.rapids.ai/install/), it o
 - [ ] `circle.ai`
   - [ ] Implement distribution of compiled wheel packages for installation.
 
-
-## Implemention Problem
-
-> [!WARNING]  
-> The following data structures are not applicable or are slower.
->
-> * `std::list<std::reference_wrapper<std::string>>`
-> * `std::string_view`
-> * `std::pmr::list<std::pmr::string>`
->
-> Using robbin_hood's fastest unordered_flat_map as a cache for BasicTokenizer and WordpieceTokenizer actually makes them slower, despite 95% cache hits, due to access time.
-> 
-> 💬 Solved!
-> 
 
 
 
