@@ -42,7 +42,6 @@
 #include "defines.h"
 #include "vocab.h"
 #include "wordpiece_tokenizer.h"
-#if USE_TRIE == 1
 #include "trie.h"
 
 class WordpieceBackwardTokenizer final : public WordpieceTokenizer {
@@ -96,14 +95,13 @@ public:
             }
             pos = new_pos;
         }
-        size_t current_size = input_ids.size();
+        const size_t current_size = input_ids.size();
         size_t space_left = 0;
 
         if (current_size < max_length) {
             space_left = max_length - current_size;
         }
-        size_t tokens_to_add = std::min(temp_ids.size(), space_left);
-        if (tokens_to_add > 0) {
+        if (const size_t tokens_to_add = std::min(temp_ids.size(), space_left); tokens_to_add > 0) {
             input_ids.insert(input_ids.end(), temp_ids.rbegin(), temp_ids.rbegin() + tokens_to_add);
         }
         return input_ids.size();
@@ -111,48 +109,4 @@ public:
 };
 
 
-#else
-class WordpieceBackwardTokenizer final : public WordpieceTokenizer {
-public:
-    explicit WordpieceBackwardTokenizer(const Vocab &vocab_, std::string unk = "[UNK]", int max_chars = 256)
-        : WordpieceTokenizer(vocab_, unk, max_chars) {
-    }
-
-    FORCE_INLINE int  tokenizer_ids(const std::string &token, int max_length, INT_LIST &input_ids) const override {
-        if (token.size() > static_cast<size_t>(max_length)) {
-            input_ids.push_back(this->UNK_NUM);
-        }
-        size_t original_size = input_ids.size();
-        size_t pos = token.size();
-        std::string candidate;
-        INT_LIST temp_ids;
-
-        while (pos > 0) {
-            bool found = false;
-            size_t new_pos = pos;
-            for (size_t i = 0; i < pos; ++i) {
-                size_t len = pos - i;
-                candidate.clear();
-                if (i > 0)
-                    candidate.append(this->suffix_indicator);
-                candidate.append(token, i, len);
-                if (auto id = vocab.get(candidate, -1); id != -1) {
-                    found = true;
-                    temp_ids.push_back(id);
-                    new_pos = i;
-                    break;
-                }
-            }
-            if (!found) {
-                input_ids.resize(original_size);
-                input_ids.push_back(vocab.get(UNK));
-                return 0;
-            }
-            pos = new_pos;
-        }
-        input_ids.insert(input_ids.end(), temp_ids.rbegin(), temp_ids.rend());
-        return 0;
-    }
-};
-#endif
 #endif

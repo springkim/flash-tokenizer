@@ -42,10 +42,23 @@
 #include "defines.h"
 #include <robin_hood.h>
 
+struct VTHasher {
+    size_t operator()(const std::string &key) const {
+        auto data = reinterpret_cast<const unsigned char *>(key.data());
+        const size_t size = key.size();
+        uint64_t hash = 0xcbf29ce484222325ull;
+        const unsigned char *end = data + size;
+        while (data < end) {
+            hash = (*data++ ^ hash) * 0x100000001b3ull;
+        }
+        return static_cast<size_t>(hash);
+    }
+};
+
 class Vocab {
 public:
     std::vector<std::string> tokens{};
-    robin_hood::unordered_flat_map<std::string, int> token_to_index{};
+    robin_hood::unordered_flat_map<std::string, int, VTHasher> token_to_index{};
 
     explicit Vocab(const std::string &filename) {
         std::ifstream ifs(filename);

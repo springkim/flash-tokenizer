@@ -189,6 +189,12 @@ FORCE_INLINE std::string to_lower_case_and_strip_accents(const std::string_view 
             } else {
                 result.append(text.data() + i, len);
             }
+            // auto& val = accent_mapping[cp];
+            // if (val.length!=0) {
+            //     result.append(val.data);
+            // }else {
+            //     result.append(text.data() + i, len);
+            // }
         }
         i += len;
     }

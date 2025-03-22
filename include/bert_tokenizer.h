@@ -95,6 +95,10 @@ public:
         this->SEP_NUM = vocab.get(this->SEP);
         this->UNK_NUM = vocab.get(this->UNK);
         this->_version_ = cpp_env(VERSION_INFO);
+
+        if (accent_mapping.empty()) {
+            accent_mapping = initializeCharMap();
+        }
     }
 
     virtual ~FlashBertTokenizer() = default;

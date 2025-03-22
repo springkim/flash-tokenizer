@@ -50,8 +50,6 @@ public:
     }
 
     [[nodiscard]] std::vector<std::string> tokenize(const std::string &text) const {
-        //const SplitFunction split_function = this->do_lower_case ? run_split_on_punc_do_lower : run_split_on_punc;
-        //const SplitFunction split_function = run_split_on_punc;
         const std::string &tokenized = clean_and_tokenize(text);
         const std::vector<std::string> &orig_tokens = whitespace_tokenize(tokenized);
         std::vector<std::string> output_tokens;

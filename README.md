@@ -66,6 +66,9 @@ The world's fastest CPU tokenizer library!
 ## News
 
 > [!IMPORTANT]  
+> **[Mar 22 2025]**
+> - Added [DFA](https://blog.cloudflare.com/pt-br/making-waf-ai-models-go-brr/#:~:text=We%20can%20also%20tune%20Aho,settings%20based%20on%20this%20recommendation) to AC Trie.
+> 
 > **[Mar 21 2025]**
 > - Improving Tokenizer Accuracy
 > 
@@ -318,6 +321,20 @@ You can run WordPiece Tokenizer on GPUs on [rapids(cudf)](https://docs.rapids.ai
  * [Example](https://github.com/rapidsai/cudf/blob/0e99ec3ec15b8b0ebe68bd884c7d22d600e9259e/python/cudf/cudf/tests/text/test_subword_tokenizer.py#L244)
 
 As you can see in [how to install rapids](https://docs.rapids.ai/install/), it only supports Linux and the CUDA version is not the same as other frameworks, so [docker](https://hub.docker.com/r/rapidsai/base) is the best choice, which is faster than CPU for batch processing but slower than CPU for streaming processing.
+
+There are good example codes and explanations in the[ blog](https://developer.nvidia.com/blog/run-state-of-the-art-nlp-workloads-at-scale-with-rapids-huggingface-and-dask/#:~:text=,and then used in subsequent). To use cuDF, you must first convert vocab.txt to [hash_vocab](https://github.com/rapidsai/cudf/blob/branch-25.06/python/cudf/cudf/utils/hash_vocab_utils.py) as shown below. The problem is that the hash_vocab function cannot convert multilingual. Therefore, the WordpieceTokenizer of cuDF cannot be used if there are any characters other than English/Chinese in the vocab.
+
+```python
+import cudf
+from cudf.utils.hash_vocab_utils import hash_vocab
+hash_vocab('bert-base-cased-vocab.txt', 'voc_hash.txt')
+```
+
+
+
+
+
+
 
 ## TODO
 

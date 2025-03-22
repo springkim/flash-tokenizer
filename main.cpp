@@ -10,12 +10,13 @@
 #include <string>
 #include <thread>
 #include <future>
-#include "timer.h"
 
 #include "bert_tokenizer.h"
 #include "env.h"
 
 #include"debugging.h"
+
+
 #define DATASET_NUMBER 1
 
 #if DATASET_NUMBER == 1
@@ -101,12 +102,12 @@ std::string DATASET_NAME = "splade_normal";
 #define MAX_LENGTH 512
 #define DO_LOWER false
 using TokenizerClass = FlashBertTokenizer;
-std::string DATASET_NAME="splade_uniform";
+std::string DATASET_NAME = "splade_uniform";
 #endif
 
 #ifdef BERT_BASE_UNCASED
-#define TEXTS_PATH "../dataset/bert-base-uncased/bert_base_uncased.txt"
-#define IDS_PATH "../dataset/bert-base-uncased/bert_base_uncased_gt.txt"
+#define TEXTS_PATH "../dataset/bert-base-uncased/bert-base-uncased.txt"
+#define IDS_PATH "../dataset/bert-base-uncased/bert-base-uncased-gt.txt"
 #define VOCAB_PATH "../dataset/bert-base-uncased/vocab.txt"
 #define MAX_LENGTH 512
 #define DO_LOWER true
@@ -212,7 +213,6 @@ vector<vector<int> > load_gt() {
 
 void test() {
 #define LOAD_PARALLEL 0
-    Timer::Tick("LoadDataset");
     double accuracy;
     double min_elapsed_time = std::numeric_limits<double>::max();
 #if LOAD_PARALLEL == 1
@@ -229,8 +229,7 @@ void test() {
     auto texts = load_titles();
     auto gts = load_gt();
 #endif
-    Timer::Tock("LoadDataset");
-    cout << "Data/GT loaded : " << Timer::Watch("LoadDataset").accu << endl;
+    cout << "Data/GT loaded" << endl;
     cout << DATASET_NAME << endl;
     TokenizerClass tokenizer(VOCAB_PATH, DO_LOWER);
     for (int testcase = 0; testcase < 3; testcase++) {
