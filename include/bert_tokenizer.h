@@ -89,13 +89,13 @@ protected:
 
 public:
     explicit FlashBertTokenizer(const std::string &vocab_file, const bool do_lower_case = true,
-                                const int model_max_length = -1)
-        : vocab(vocab_file), basic(do_lower_case), model_max_length(model_max_length),
+                                const int model_max_length = -1, const bool tokenize_chinese_chars = true)
+        : vocab(vocab_file), basic(do_lower_case, tokenize_chinese_chars), model_max_length(model_max_length),
           wordpiece(vocab, this->UNK) {
         this->CLS_NUM = vocab.get(this->CLS);
         this->SEP_NUM = vocab.get(this->SEP);
         this->UNK_NUM = vocab.get(this->UNK);
-        this->_version_ = cpp_env(VERSION_INFO);
+        this->_version_ = cpp_env(VERSION_INFO_STR(VERSION_INFO));
 
         if (accent_mapping.empty()) {
             accent_mapping = initializeCharMap();
@@ -129,6 +129,16 @@ public:
         return input_ids;
     }
 
+    virtual std::vector<std::string> tokenize(const std::string &text) {
+        constexpr auto max_length = std::numeric_limits<int>::max();
+        const auto input_ids = this->tokenizer_ids(text, max_length, "longest");
+        std::vector<std::string> tokens;
+        tokens.reserve(input_ids.size() - 2);
+        for (size_t i = 1; i < input_ids.size() - 1; i++) {
+            tokens.emplace_back(this->vocab.get(input_ids[i]));
+        }
+        return tokens;
+    }
 
     virtual std::vector<int> encode(const std::string &text, const std::string &padding = "max_length", int max_length = -1) {
         if (max_length == -1) {
@@ -194,8 +204,8 @@ protected:
 
 public:
     explicit
-    FlashBertTokenizerBidirectional(const std::string &vocab_file, const bool do_lower_case = true, const int model_max_length = -1) : FlashBertTokenizer(
-                                                                                                                                           vocab_file, do_lower_case, model_max_length), wordpiece_backward(vocab, this->UNK) {
+    FlashBertTokenizerBidirectional(const std::string &vocab_file, const bool do_lower_case = true, const int model_max_length = -1, const bool tokenize_chinese_chars = true) : FlashBertTokenizer(
+                                                                                                                                                                                     vocab_file, do_lower_case, model_max_length, tokenize_chinese_chars), wordpiece_backward(vocab, this->UNK) {
         this->pool2 = std::make_unique<ThreadPool>(2);
     }
 

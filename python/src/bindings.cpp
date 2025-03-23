@@ -22,11 +22,19 @@ PYBIND11_MODULE(_core, m) {
     )pbdoc";
 
     py::class_<FlashBertTokenizer>(m, "FlashBertTokenizer")
-            .def(py::init<const std::string &, bool, const int>(),
+            .def(py::init<const std::string &, bool, const int, bool>(),
                  py::arg("vocab_file"),
                  py::arg("do_lower_case"),
-                 py::arg("model_max_length"))
+                 py::arg("model_max_length"),
+                 py::arg("tokenize_chinese_chars"))
             .def("version", &FlashBertTokenizer::version)
+            .def("tokenize",
+             [](FlashBertTokenizer &self,
+                py::str text)->std::vector<std::string> {
+                 std::string text_str = text.cast<std::string>();
+                 return self.tokenize(text_str);
+                },
+                py::arg("text"))
             .def("encode",
                  [](FlashBertTokenizer &self,
                     py::str text,
@@ -54,10 +62,18 @@ PYBIND11_MODULE(_core, m) {
                  "Encode a batch of texts into token IDs. Returns a list of token ID lists.");
 
     py::class_<FlashBertTokenizerBidirectional, FlashBertTokenizer>(m, "FlashBertTokenizerBidirectional")
-            .def(py::init<const std::string &, bool,const int>(),
+            .def(py::init<const std::string &, bool,const int,bool>(),
                  py::arg("vocab_file"),
                  py::arg("do_lower_case"),
-                 py::arg("model_max_length"))
+                 py::arg("model_max_length"),
+                 py::arg("tokenize_chinese_chars"))
+            .def("tokenize",
+             [](FlashBertTokenizer &self,
+                py::str text)->std::vector<std::string> {
+                 std::string text_str = text.cast<std::string>();
+                 return self.tokenize(text_str);
+                },
+                py::arg("text"))
             .def("encode",
                  [](FlashBertTokenizerBidirectional &self,
                     py::str text,

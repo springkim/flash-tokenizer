@@ -59,6 +59,7 @@ class Vocab {
 public:
     std::vector<std::string> tokens{};
     robin_hood::unordered_flat_map<std::string, int, VTHasher> token_to_index{};
+    robin_hood::unordered_flat_map<int, std::string> index_to_token{};
 
     explicit Vocab(const std::string &filename) {
         std::ifstream ifs(filename);
@@ -73,6 +74,7 @@ public:
             const auto idx = static_cast<int>(tokens.size());
             this->tokens.push_back(line);
             this->token_to_index[line] = idx;
+            this->index_to_token[idx] = line;
         }
         ifs.close();
     }
@@ -81,6 +83,9 @@ public:
         if (const auto it = this->token_to_index.find(token); it != this->token_to_index.end())
             return it->second;
         return default_value;
+    }
+    [[nodiscard]] std::string get(const int id) const {
+        return this->index_to_token.find(id)->second;
     }
 };
 

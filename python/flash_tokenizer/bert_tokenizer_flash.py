@@ -8,15 +8,14 @@ class BertTokenizerFlash:
 
     def __init__(self, vocab_file,
                  do_lower_case=True,
-                 model_max_length: int = 256,
+                 model_max_length: int = 512,
                  tokenize_chinese_chars=True,
-                 strip_accents=None,
                  bidirectional=False,
                  **kwargs):
         if bidirectional:
-            self.tokenizer = FlashBertTokenizerBidirectional(vocab_file, do_lower_case, model_max_length)
+            self.tokenizer = FlashBertTokenizerBidirectional(vocab_file, do_lower_case, model_max_length, tokenize_chinese_chars)
         else:
-            self.tokenizer = FlashBertTokenizer(vocab_file, do_lower_case, model_max_length)
+            self.tokenizer = FlashBertTokenizer(vocab_file, do_lower_case, model_max_length, tokenize_chinese_chars)
         self.__version = self.tokenizer.version()
         pass
 
@@ -44,3 +43,6 @@ class BertTokenizerFlash:
 
         return BatchEncoding(input_ids, return_attention_mask=return_attention_mask,
                              return_token_type_ids=return_token_type_ids)
+
+    def tokenize(self, text: str):
+        return self.tokenizer.tokenize(text)

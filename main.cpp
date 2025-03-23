@@ -16,22 +16,6 @@
 using json = nlohmann::json;
 using namespace std;
 
-struct DataList {
-    static const std::string bert_base_cased;
-    static const std::string bert_base_uncased;
-    static const std::string bert_base_multilingual_cased;
-    static const std::string kcbert_base;
-    static const std::string KR_BERT;
-    static const std::string llmlingua_2_bert_base_multilingual_cased_meetingbank;
-};
-
-const std::string DataList::bert_base_cased = "bert-base-cased";
-const std::string DataList::bert_base_uncased = "bert-base-uncased";
-const std::string DataList::bert_base_multilingual_cased = "bert-base-multilingual-cased";
-const std::string DataList::kcbert_base = "kcbert-base";
-const std::string DataList::KR_BERT = "KR-BERT";
-const std::string DataList::llmlingua_2_bert_base_multilingual_cased_meetingbank = "llmlingua-2-bert-base-multilingual-cased-meetingbank";
-
 class TestData {
 public:
     std::string text_file;
@@ -160,9 +144,26 @@ public:
     }
 };
 
-void perf_test(bool parallel = false) {
+struct DataList {
+    static const std::string bert_base_cased;
+    static const std::string bert_base_uncased;
+    static const std::string bert_base_multilingual_cased;
+    static const std::string kcbert_base;
+    static const std::string KR_BERT;
+    static const std::string llmlingua_2_bert_base_multilingual_cased_meetingbank;
+};
+
+const std::string DataList::bert_base_cased = "bert-base-cased";
+const std::string DataList::bert_base_uncased = "bert-base-uncased";
+const std::string DataList::bert_base_multilingual_cased = "bert-base-multilingual-cased";
+const std::string DataList::kcbert_base = "kcbert-base";
+const std::string DataList::KR_BERT = "KR-BERT";
+const std::string DataList::llmlingua_2_bert_base_multilingual_cased_meetingbank = "llmlingua-2-bert-base-multilingual-cased-meetingbank";
+
+
+void perf_test(const bool parallel = false) {
     cout << "Start performance test..." << endl;
-    const TestData td(DataList::llmlingua_2_bert_base_multilingual_cased_meetingbank);
+    const TestData td(DataList::bert_base_cased);
     std::chrono::duration<double> diff{};
     size_t correct = 0;
     const auto t_beg = std::chrono::system_clock::now();
@@ -182,7 +183,7 @@ void perf_test(bool parallel = false) {
     for (size_t i = 0; i < td.texts.size(); i++) {
         correct += ids_list[i] == td.gts[i];
     }
-    std::vector<std::string> thread_option = {"[ST]", "[MT]"};
+    const std::vector<std::string> thread_option = {"[ST]", "[MT]"};
     std::cout << thread_option[parallel] << " | " << elapsed_time << " seconds" << "  |  ";
     std::cout << td.texts.size() << "  |  ";
     const double accuracy = static_cast<double>(correct) * 100.0 / static_cast<double>(td.texts.size());
@@ -190,8 +191,23 @@ void perf_test(bool parallel = false) {
     std::cout << "--------------" << std::endl;
 }
 
+void sample_test() {
+    std::vector<std::string> sample_texts = {
+        "세상 어떤 짐승이 이를 드러내고 사냥을 해? 약한 짐승이나 몸을 부풀리지, 진짜 짐승은 누구보다 침착하지."
+    };
+    FlashBertTokenizerBidirectional tokenizer("../sample/vocab.txt", false, 512);
+
+    auto tokens = tokenizer.tokenize(sample_texts[0]);
+    for (auto &token: tokens) {
+        std::cout << token << " ";
+    }
+}
+
 int main() {
     std::ios::sync_with_stdio(false);
+
+    // sample_test();
+    // exit(0);
     cout << cpp_env() << endl;
     perf_test(true);
 
