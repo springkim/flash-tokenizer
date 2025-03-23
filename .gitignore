@@ -46,3 +46,5 @@ package_build/.cache
 package_build/.nv
 secret.txt
 perftest/
+dataset/
+*.7z

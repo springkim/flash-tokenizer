@@ -269,6 +269,17 @@ Accuracy is the result of measuring [google's BertTokenizerFast](https://github.
 | **FlashBertTokenizer**             |        5.2601s | 1,000,000 |   99.9484% |
 
 
+#### [microsoft/llmlingua-2-bert-base-multilingual-cased-meetingbank](https://huggingface.co/microsoft/llmlingua-2-bert-base-multilingual-cased-meetingbank)
+
+| Tokenizer                      |   Elapsed Time |     texts |   Accuracy |
+|--------------------------------|----------------:|-----------:|------------:|
+| BertTokenizerFast(Huggingface) |      208.8858s | 2,000,000 |   99.7964% |
+| BertTokenizerFast(PaddleNLP)   |      192.6593s | 2,000,000 |   99.7964% |
+| FastBertTokenizer(Tensorflow)  |      413.2010s | 2,000,000 |   99.7892% |
+| Blingfire                      |       39.3765s | 2,000,000 |   99.9780% |
+| **FlashBertTokenizer**             |       22.8820s | 2,000,000 |   99.8970% |
+
+
 #### [KR-BERT](https://github.com/snunlp/KR-BERT)
 
 
@@ -334,21 +345,18 @@ hash_vocab('bert-base-cased-vocab.txt', 'voc_hash.txt')
 
 
 
-
-
 ## TODO
 
 - [x] [BidirectionalWordPieceTokenizer](https://github.com/snunlp/KR-BERT/blob/master/krbert_tensorflow/tokenization_ranked.py)
 - [x] BatchEncoder with Multithreading. 
-- [ ] ~~CUDA Version.~~
 - [x] Replace `std::list` to `boost::intrusive::list`.
-- [ ] [MaxMatch-Dropout: Subword Regularization for WordPiece](https://arxiv.org/abs/2209.04126) Option.
-- [ ] SIMD
-- [ ] Use stack memory for reduce memory allocation. (C-Style, [alloca](https://man7.org/linux/man-pages/man3/alloca.3.html), [_alloca](https://learn.microsoft.com/ko-kr/cpp/c-runtime-library/reference/alloca?view=msvc-170))
-- [ ] Support for parallel processing option for single encode.
+- [x] ~~[MaxMatch-Dropout: Subword Regularization for WordPiece](https://arxiv.org/abs/2209.04126) Option.~~
+- [x] Use stack memory for reduce memory allocation. (C-Style, [alloca](https://man7.org/linux/man-pages/man3/alloca.3.html), [_alloca](https://learn.microsoft.com/ko-kr/cpp/c-runtime-library/reference/alloca?view=msvc-170))
+- [x] ~~Support for parallel processing option for single encode.~~
 - [ ] `circle.ai`
   - [ ] Implement distribution of compiled wheel packages for installation.
-
+- [ ] SIMD
+- [ ] ~~CUDA Version.~~
 
 
 

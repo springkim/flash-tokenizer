@@ -22,6 +22,7 @@ struct DataList {
     static const std::string bert_base_multilingual_cased;
     static const std::string kcbert_base;
     static const std::string KR_BERT;
+    static const std::string llmlingua_2_bert_base_multilingual_cased_meetingbank;
 };
 
 const std::string DataList::bert_base_cased = "bert-base-cased";
@@ -29,6 +30,7 @@ const std::string DataList::bert_base_uncased = "bert-base-uncased";
 const std::string DataList::bert_base_multilingual_cased = "bert-base-multilingual-cased";
 const std::string DataList::kcbert_base = "kcbert-base";
 const std::string DataList::KR_BERT = "KR-BERT";
+const std::string DataList::llmlingua_2_bert_base_multilingual_cased_meetingbank = "llmlingua-2-bert-base-multilingual-cased-meetingbank";
 
 class TestData {
 public:
@@ -160,7 +162,7 @@ public:
 
 void perf_test(bool parallel = false) {
     cout << "Start performance test..." << endl;
-    const TestData td(DataList::KR_BERT);
+    const TestData td(DataList::llmlingua_2_bert_base_multilingual_cased_meetingbank);
     std::chrono::duration<double> diff{};
     size_t correct = 0;
     const auto t_beg = std::chrono::system_clock::now();

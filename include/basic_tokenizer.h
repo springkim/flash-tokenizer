@@ -36,7 +36,7 @@
 //
 #ifndef A509LU8VZQRP3PNW02Q5UH286VBZ13PY7GBV9F767ALLP3P9P50WVH7NZL7B3YS6
 #define A509LU8VZQRP3PNW02Q5UH286VBZ13PY7GBV9F767ALLP3P9P50WVH7NZL7B3YS6
-
+#include <memory_resource>
 #include "functions.h"
 
 using SplitFunction = void (*)(std::string_view, std::vector<std::string> &);
@@ -52,8 +52,9 @@ public:
     }
 
     [[nodiscard]] std::vector<std::string> tokenize(const std::string &text) const {
-        const std::string &tokenized = clean_and_tokenize(text);
+        const std::pmr::string &tokenized = clean_and_tokenize(text);
         const std::vector<std::string> &orig_tokens = whitespace_tokenize(tokenized);
+
         std::vector<std::string> output_tokens;
         output_tokens.reserve(1024);
         for (const auto &token: orig_tokens) {

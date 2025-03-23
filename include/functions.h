@@ -40,6 +40,7 @@
 #include <codecvt>
 #include <robin_hood.h>
 #include <array>
+#include <memory_resource>
 #include"charmap.h"
 
 namespace {
@@ -105,27 +106,29 @@ namespace {
     constexpr auto PUNCTUATION_ARRAY = create_punctuation_array();
     constexpr auto CONTROL_ARRAY = create_control_array();
     constexpr auto WHITESPACE_ARRAY = create_whitespace_array();
+    constexpr std::array<size_t, 256> UTF8_CHAR_LEN_ARRAY = {
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3,
+        3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1
+    };
 }
 
 
-FORCE_INLINE bool is_punctuation_cp(const int cp) {
+inline bool is_punctuation_cp(const int cp) {
     return cp < PUNCTUATION_ARRAY.size() && PUNCTUATION_ARRAY[cp];
 }
 
-FORCE_INLINE bool is_control_cp(const int cp) {
+inline bool is_control_cp(const int cp) {
     return cp < CONTROL_ARRAY.size() && CONTROL_ARRAY[cp];
 }
 
-FORCE_INLINE bool is_whitespace_cp(const int cp) {
+inline bool is_whitespace_cp(const int cp) {
     return cp < WHITESPACE_ARRAY.size() && WHITESPACE_ARRAY[cp];
 }
 
-FORCE_INLINE size_t utf8_char_length(const unsigned char c) {
-    if ((c & 0x80) == 0) return 1;
-    if ((c & 0xF0) == 0xE0) return 3;
-    if ((c & 0xE0) == 0xC0) return 2;
-    if ((c & 0xF8) == 0xF0) return 4;
-    return 1;
+inline size_t utf8_char_length(const unsigned char c) {
+    return UTF8_CHAR_LEN_ARRAY[c];
 }
 
 FORCE_INLINE int utf8_to_codepoint(const std::string_view str, const size_t pos) {
@@ -166,16 +169,20 @@ FORCE_INLINE int utf8_to_codepoint(const std::string_view str, const size_t pos)
     return 0;
 }
 
-FORCE_INLINE std::string to_lower_case_and_strip_accents(const std::string_view &text) {
+FORCE_INLINE std::pmr::string to_lower_case_and_strip_accents(const std::string_view &text) {
     static constexpr std::array<char, 128> lower_map = [] {
         std::array<char, 128> map{};
         for (size_t i = 0; i < 128; ++i)
             map[i] = (i >= 'A' && i <= 'Z') ? static_cast<char>(i + 32) : static_cast<char>(i);
         return map;
     }();
-
-    std::string result;
-    result.reserve(text.size());
+    thread_local  char buffer[1024];
+    thread_local std::pmr::monotonic_buffer_resource pool(buffer, sizeof(buffer));
+    pool.release();
+    std::pmr::string result{&pool};
+    result.reserve(512);
+    // std::string result;
+    // result.reserve(text.size());
 
     for (size_t i = 0; i < text.size();) {
         const int cp = utf8_to_codepoint(text, i);
@@ -210,9 +217,14 @@ FORCE_INLINE bool is_chinese_char(const int &cp) {
 }
 
 
-[[nodiscard]] FORCE_INLINE std::string clean_and_tokenize(const std::string &text) {
-    std::string output;
-    output.reserve(text.size());
+[[nodiscard]] FORCE_INLINE std::pmr::string clean_and_tokenize(const std::string &text) {
+    thread_local  char buffer[1024];
+    thread_local std::pmr::monotonic_buffer_resource pool(buffer, sizeof(buffer));
+    pool.release();
+    std::pmr::string output{&pool};
+    output.reserve(512);
+    // std::string output;
+    // output.reserve(text.size());
     for (size_t i = 0; i < text.size();) {
         int cp = utf8_to_codepoint(text, i);
         const size_t char_len = utf8_char_length(text[i]);
@@ -231,7 +243,7 @@ FORCE_INLINE bool is_chinese_char(const int &cp) {
         }
         i += char_len;
     }
-    return std::move(output);
+    return output;
 }
 
 FORCE_INLINE void run_split_on_punc(const std::string_view text, std::vector<std::string> &output) {
@@ -266,11 +278,11 @@ FORCE_INLINE void run_split_on_punc(const std::string_view text, std::vector<std
 
 
 FORCE_INLINE void run_split_on_punc_do_lower(const std::string_view text, std::vector<std::string> &output) {
-    const std::string &&processed_text = to_lower_case_and_strip_accents(text);
+    const std::pmr::string &&processed_text = to_lower_case_and_strip_accents(text);
     run_split_on_punc(processed_text, output);
 }
 
-FORCE_INLINE std::vector<std::string> whitespace_tokenize(const std::string &text) {
+FORCE_INLINE std::vector<std::string> whitespace_tokenize(const std::pmr::string &text) {
     if (text.empty()) {
         return {};
     }
@@ -295,7 +307,7 @@ FORCE_INLINE std::vector<std::string> whitespace_tokenize(const std::string &tex
     return std::move(tokens);
 }
 
-FORCE_INLINE void insertion_sort(std::vector<int> &vec) {
+static void insertion_sort(std::vector<int> &vec) {
     if (vec.size() <= 1) return;
     const int n = static_cast<int>(vec.size());
     int *arr = vec.data();
@@ -321,13 +333,8 @@ FORCE_INLINE bool compare_ids(std::vector<int> &a, std::vector<int> &b) {
     const int min1 = *std::min_element(a.begin(), a.end());
     const int min2 = *std::min_element(b.begin(), b.end());
     if (min1 < min2)return true;
-#if INT_SEQUENCE == VECTOR
     insertion_sort(a);
     insertion_sort(b);
-#else
-    std::sort(a.begin(), a.end());
-    std::sort(b.begin(), b.end());
-#endif
     return a < b;
 }
 
