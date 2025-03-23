@@ -36,14 +36,21 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     endif ()
 endif ()
 
+
+#file(GLOB LIB_SRC "3rdparty/src/*.cpp")
 set(SRC_FILES src/bert_tokenizer.cpp)
 
+
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    set(COMPILE_OPTIONS -Ofast -funroll-loops -floop-nest-optimize)
+    set(COMPILE_OPTIONS -Ofast -funroll-loops -floop-nest-optimize
+            -fstrict-overflow -fomit-frame-pointer
+            -fipa-cp-clone -fno-rtti)
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     add_compile_options(-Wno-deprecated-declarations)
-    set(COMPILE_OPTIONS -O3 -flto -funroll-loops
-            -ffast-math -fomit-frame-pointer -fvectorize -fslp-vectorize)
+    add_definitions(-DDO_FORCE_INLINE)
+    set(COMPILE_OPTIONS -O3 -flto -funroll-loops -ffast-math
+            -fomit-frame-pointer -fvectorize -fslp-vectorize -fno-finite-math-only
+            -fstrict-aliasing -finline-functions)
 elseif (MSVC)
     set(COMPILE_OPTIONS /O2 /W1 /GL /Ot /Zc:__cplusplus)
 endif ()
@@ -91,6 +98,7 @@ if (BUILD_EXECUTABLE)
 
     add_executable(flash_tokenizer main.cpp ${SRC_FILES})
     target_include_directories(flash_tokenizer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    #target_include_directories(flash_tokenizer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/include)
     if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
         if (WIN32)
             if (OpenMP_CXX_FOUND)

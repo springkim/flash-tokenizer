@@ -68,6 +68,7 @@
 #include "wordpiece_tokenizer.h"
 #include "wordpiecebackward_tokenizer.h"
 #include "charmap.h"
+//#include "buffer.h"
 
 class FlashBertTokenizer {
 protected:
@@ -80,7 +81,7 @@ protected:
     const int model_max_length;
     std::unique_ptr<ThreadPool> pool{};
 
-
+    //MemoryBuffer buffer{};
     const Vocab vocab;
     const BasicTokenizer basic;
     const WordpieceTokenizer wordpiece;
@@ -141,7 +142,16 @@ public:
             max_length = this->model_max_length;
         }
         if (parallel) {
-#ifndef _OPENMP
+#ifdef _OPENMP
+            std::vector<std::vector<int> > input_ids(texts.size());
+
+#pragma omp parallel for
+            for (size_t i = 0; i < texts.size(); ++i) {
+                input_ids[i] = this->tokenizer_ids(texts[i], max_length, padding);
+            }
+
+            return input_ids;
+#else
             if (!this->pool) {
                 this->pool = std::make_unique<ThreadPool>();
             }
@@ -160,15 +170,6 @@ public:
             input_ids.reserve(futures.size());
             for (auto &f: futures) {
                 input_ids.push_back(f.get());
-            }
-
-            return input_ids;
-#else
-            std::vector<std::vector<int> > input_ids(texts.size());
-
-#pragma omp parallel for
-            for (size_t i = 0; i < texts.size(); ++i) {
-                input_ids[i] = this->tokenizer_ids(texts[i], max_length, padding);
             }
 
             return input_ids;

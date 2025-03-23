@@ -77,7 +77,7 @@ public:
         ifs.close();
     }
 
-    [[nodiscard]] FORCE_INLINE int get(const std::string &token, const int default_value = 0) const {
+    [[nodiscard]] int get(const std::string &token, const int default_value = 0) const {
         if (const auto it = this->token_to_index.find(token); it != this->token_to_index.end())
             return it->second;
         return default_value;

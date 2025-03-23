@@ -39,10 +39,12 @@
 
 #include "functions.h"
 
+using SplitFunction = void (*)(std::string_view, std::vector<std::string> &);
+
 class BasicTokenizer {
 public:
     const bool do_lower_case;
-    using SplitFunction = void (*)(std::string_view, std::vector<std::string> &);
+
     const SplitFunction split_function[2] = {run_split_on_punc, run_split_on_punc_do_lower};
 
     explicit BasicTokenizer(const bool lower_case = true)

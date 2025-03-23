@@ -52,7 +52,7 @@ protected:
     Trie suffixTrie;
 
 public:
-    FORCE_INLINE virtual void buildTries() {
+    virtual void buildTries() {
         for (const auto &entry: vocab.token_to_index) {
             const std::string &word = entry.first;
             const int &idx = entry.second;
@@ -68,13 +68,13 @@ public:
 
     virtual ~WordpieceTokenizer() = default;
 
-    explicit WordpieceTokenizer(const Vocab &vocab_, std::string unk = "[UNK]", int max_chars = 256)
+    explicit WordpieceTokenizer(const Vocab &vocab_, std::string unk = "[UNK]")
         : vocab(vocab_), UNK(std::move(unk)) {
         this->UNK_NUM = vocab.get(UNK);
         WordpieceTokenizer::buildTries();
     }
 
-    FORCE_INLINE virtual int tokenizer_ids(const std::string &token, const int max_length, std::vector<int> &input_ids) const {
+    virtual int tokenizer_ids(const std::string &token, const int max_length, std::vector<int> &input_ids) const {
         if (token.size() > static_cast<size_t>(max_length) && input_ids.size() < max_length) {
             input_ids.emplace_back(this->UNK_NUM);
             return input_ids.size();

@@ -25,7 +25,7 @@ FORCE_INLINE std::string codePointToUTF8(const int codePoint) {
     return result;
 }
 
-SELECT_ANY robin_hood::unordered_flat_map<int, std::string> accent_mapping;
+SELECT_ANY inline robin_hood::unordered_flat_map<int, std::string> accent_mapping;
 
 static robin_hood::unordered_flat_map<int, std::string> initializeCharMap() {
     robin_hood::unordered_flat_map<int, std::string> charMap;

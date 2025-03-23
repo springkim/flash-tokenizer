@@ -82,8 +82,6 @@ public:
         );
         std::future<return_type> res = task->get_future(); {
             std::unique_lock<std::mutex> lock(queueMutex);
-            if (stop)
-                throw std::runtime_error("enqueue on stopped ThreadPool");
             tasks.emplace([task]() { (*task)(); });
         }
         condition.notify_one();
