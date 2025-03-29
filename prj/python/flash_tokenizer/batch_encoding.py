@@ -1,10 +1,11 @@
 import numpy as np
 from collections import UserDict
+from typing import List, Union, Optional
 
 
 # https://github.com/huggingface/transformers/blob/main/src/transformers/tokenization_utils_base.py#L193
 class BatchEncoding(UserDict):
-    def __init__(self, input_ids: list[list[int]] | np.ndarray, dtype=np.int32,
+    def __init__(self, input_ids: Union[List[List[int]], np.ndarray], dtype=np.int32,
                  return_attention_mask: bool = True, return_token_type_ids: bool = True):
         super().__init__()
         self.input_ids = input_ids

@@ -14,11 +14,16 @@ tokenizer2 = BertTokenizer(vocab_file, do_lower_case=False)
 
 for title in titles:
     print(title)
-    print(tokenizer1.tokenize(title))
-    print(tokenizer2.tokenize(title))
+    tokens1 = tokenizer1.tokenize(title)
+    tokens2 = tokenizer2.tokenize(title)
     ids1 = tokenizer1(title, max_length=512, padding="longest").input_ids[0]
-    ids2 = tokenizer2(title, max_length=512, padding="longest").input_ids
+    ids2 = tokenizer2(title, max_length=512, padding="longest", return_tensors="np").input_ids[0].tolist()
+    if tokens1 == tokens2 and ids1 == ids2:
+        print("Accept!")
+    else:
+        print("Wrong Answer")
+    print(tokens1)
+    print(tokens2)
     print(ids1)
     print(ids2)
     print()
-

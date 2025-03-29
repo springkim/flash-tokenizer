@@ -4,4 +4,3 @@ pybind11
 numpy
 setuptools
 wheel
-cibuildwheel

@@ -127,7 +127,7 @@ CC=gcc CXX=g++ pip install -U flash-tokenizer
 ### Install from Source
 ```bash
 git clone https://github.com/NLPOptimize/flash-tokenizer
-cd flash-tokenizer/prj
+cd flash-tokenizer
 pip install .
 ```
 

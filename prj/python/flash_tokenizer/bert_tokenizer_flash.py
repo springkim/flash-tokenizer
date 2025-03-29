@@ -24,7 +24,7 @@ class BertTokenizerFlash:
         return self.__version;
 
     def __call__(self,
-                 text: list[str] | str,
+                 text: Union[List[str], str],
                  padding: str = "max_length",
                  max_length: Optional[int] = None,
                  add_special_tokens: bool = True,

@@ -1,4 +1,30 @@
+
 ```bash
+# MacOS/Windows
+
+conda create -n python38 python=3.8 -y
+conda create -n python39 python=3.9 -y
+conda create -n python310 python=3.10 -y
+conda create -n python311 python=3.11 -y
+conda create -n python312 python=3.12 -y
+conda create -n python313 python=3.13 -y
+
+conda activate python38
+conda activate python39
+conda activate python310
+conda activate python311
+conda activate python312
+conda activate python313
+pip install build twine pybind11 numpy setuptools wheel --no-warn-script-location transformers
+python -m build
+```
+
+
+```bash
+
+
+
+
 # MacOS
 
 CC=gcc CXX=g++ CUSTOM_PYTHON=ON /usr/local/bin/python3 -m build

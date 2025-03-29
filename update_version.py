@@ -1,7 +1,7 @@
 import os
 import re
 
-with open("pyproject.toml", "rt", encoding="utf-8") as f:
+with open("prj/pyproject.toml", "rt", encoding="utf-8") as f:
     lines = f.read().splitlines()
 
 for line in lines:
@@ -9,7 +9,7 @@ for line in lines:
         version_toml = line.split("=")[1].strip()[1:-1]
         break
 
-with open("CMakeLists.txt", "rt", encoding="utf-8") as f:
+with open("prj/CMakeLists.txt", "rt", encoding="utf-8") as f:
     lines = f.read().splitlines()
 for line in lines:
     if "PROJECT_VERSION_STR" in line:
@@ -17,8 +17,8 @@ for line in lines:
         version_cmakelist = re.sub(r'[^0-9\.]', '', tmp)
         break
 
-print(f'pyptoject.toml: {version_toml}')
-print(f'CMakeLists.txt: {version_cmakelist}')
+print(f'prj/pyptoject.toml: {version_toml}')
+print(f'prj/CMakeLists.txt: {version_cmakelist}')
 if version_toml != version_cmakelist:
     print("Incorrect Version")
 
@@ -27,7 +27,7 @@ new_version = input("Enter new version: ")
 print(f'Version: {version_toml} => {new_version}')
 check = input('Update version(y,n): ')
 if check == "y":
-    for file in ['pyproject.toml', 'CMakeLists.txt', 'include/version.h']:
+    for file in ['CMakeLists.txt', 'prj/pyproject.toml', 'prj/CMakeLists.txt', 'prj/include/version.h']:
         with open(file, "rt", encoding="utf-8") as f:
             data = f.read().replace(version_toml, new_version)
         with open(file, "wt", encoding="utf-8") as f:
