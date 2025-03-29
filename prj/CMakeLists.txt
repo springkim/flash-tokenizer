@@ -7,39 +7,14 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
-#if (WIN32)
-#    set(PYTHON_VERSIONS "Python312" "Python311" "Python310" "Python39" "Python38" "Python37")
-#    foreach (VERSION ${PYTHON_VERSIONS})
-#        set(PYTHON_PATH "$ENV{USERPROFILE}/AppData/Local/Programs/Python/${VERSION}/python.exe")
-#        if (EXISTS "${PYTHON_PATH}")
-#            set(Python3_EXECUTABLE "${PYTHON_PATH}")
-#            set(Python_EXECUTABLE "${PYTHON_PATH}")
-#            message(STATUS "Found Python at: ${Python3_EXECUTABLE}")
-#            break()
-#        endif ()
-#    endforeach ()
-#elseif (UNIX AND NOT APPLE)
-#    set(Python3_EXECUTABLE "/usr/bin/python3")
-#    set(Python_EXECUTABLE "/usr/bin/python3")
-#elseif (APPLE)
-#    set(Python3_EXECUTABLE "/usr/local/bin/python3")
-#    set(Python_EXECUTABLE "/usr/local/bin/python3")
-#endif ()
 
 
 option(BUILD_PYTHON_MODULE "Build the Python module" ON)
 
 
-#if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-#    if (WIN32)
-#        find_package(OpenMP)
-#    endif ()
-#endif ()
 find_package(OpenMP)
 
-#file(GLOB LIB_SRC "3rdparty/src/*.cpp")
 set(SRC_FILES src/bert_tokenizer.cpp)
-
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     set(COMPILE_OPTIONS -Ofast -funroll-loops -floop-nest-optimize
@@ -57,9 +32,7 @@ endif ()
 
 
 if (BUILD_PYTHON_MODULE)
-    if (CUSTOM_PYTHON)
-        find_package(Python COMPONENTS Interpreter Development.Module REQUIRED)
-    endif ()
+    find_package(Python COMPONENTS Interpreter Development.Module REQUIRED)
 
     execute_process(
             COMMAND "${Python_EXECUTABLE}" -c "import pybind11; print(pybind11.get_cmake_dir())"
@@ -77,13 +50,6 @@ if (BUILD_PYTHON_MODULE)
 
     pybind11_add_module(_core python/src/bindings.cpp)
     target_link_libraries(_core PRIVATE bert_tokenizer)
-    #    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    #        if (WIN32)
-    #            if (OpenMP_CXX_FOUND)
-    #                target_link_libraries(_code PRIVATE OpenMP::OpenMP_CXX)
-    #            endif ()
-    #        endif ()
-    #    endif ()
 
     if (OpenMP_CXX_FOUND)
         target_link_libraries(_core PRIVATE OpenMP::OpenMP_CXX)
