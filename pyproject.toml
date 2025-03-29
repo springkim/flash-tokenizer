@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "flash_tokenizer"
-version = "1.1.5"
+version = "1.1.6"
 description = "Extremely fast bert tokenizer"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -33,6 +33,11 @@ Issues = "https://github.com/NLPOptimize/flash-tokenizer/issues"
 [tool.scikit-build]
 wheel.expand-macos-universal-tags = true
 cmake.build-type = "Release"
+
+#[tool.scikit-build.cmake.define]
+#CMAKE_C_COMPILER = "C:/mingw64/bin/cc.exe"
+#CMAKE_CXX_COMPILER = "C:/mingw64/bin/g++.exe"
+#CMAKE_GENERATOR = "MinGW Makefiles"
 
 
 [tool.setuptools.exclude-package-data]

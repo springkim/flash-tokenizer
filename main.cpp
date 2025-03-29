@@ -173,7 +173,7 @@ const std::string
 void perf_test(const bool parallel = false) {
   cout << "Start performance test..." << endl;
   const TestData td(
-      DataList::llmlingua_2_bert_base_multilingual_cased_meetingbank);
+      DataList::kcbert_base);
   std::chrono::duration<double> diff{};
   size_t correct = 0;
   const auto t_beg = std::chrono::system_clock::now();

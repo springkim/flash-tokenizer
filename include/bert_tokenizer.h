@@ -161,7 +161,7 @@ public:
             std::vector<std::vector<int> > input_ids(texts.size());
 
 #pragma omp parallel for
-            for (size_t i = 0; i < texts.size(); ++i) {
+            for (int i = 0; i < texts.size(); ++i) {
                 input_ids[i] = this->tokenizer_ids(texts[i], max_length, padding);
             }
             return input_ids;
@@ -306,7 +306,7 @@ public:
             std::vector<std::vector<int> > input_ids(texts.size());
 
 #pragma omp parallel for
-            for (size_t i = 0; i < texts.size(); ++i) {
+            for (int i = 0; i < texts.size(); ++i) {
                 input_ids[i] = this->tokenizer_ids(texts[i], max_length, padding);
             }
 

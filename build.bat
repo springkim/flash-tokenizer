@@ -1,10 +1,20 @@
 @echo off
 
+conda create -n python39 python=3.9 -y
+conda create -n python310 python=3.10 -y
+conda create -n python311 python=3.11 -y
+conda create -n python312 python=3.12 -y
 
-.\package_build\miniconda_win\envs\py3.9\python.exe -m build
-.\package_build\miniconda_win\envs\py3.10\python.exe -m build
-.\package_build\miniconda_win\envs\py3.11\python.exe -m build
-.\package_build\miniconda_win\envs\py3.12\python.exe -m build
+
+conda activate python39
+conda activate python310
+conda activate python311
+conda activate python312
+pip install build twine pybind11 numpy==1.26.4 setuptools wheel --no-warn-script-location
+python -m build
+
+
+
 
 echo "Complete!!"
 pause
