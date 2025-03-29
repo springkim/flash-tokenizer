@@ -56,7 +56,25 @@ elseif (MSVC)
 endif ()
 
 
-if (BUILD_PYTHON_MODULE)
+if (BUILD_EXECUTABLE)
+
+    add_executable(flash_tokenizer main.cpp ${SRC_FILES})
+    target_include_directories(flash_tokenizer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    #target_include_directories(flash_tokenizer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/include)
+    #    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    #        if (WIN32)
+    #            if (OpenMP_CXX_FOUND)
+    #                target_link_libraries(flash_tokenizer PRIVATE OpenMP::OpenMP_CXX)
+    #            endif ()
+    #        endif ()
+    #    endif ()
+
+    if (OpenMP_CXX_FOUND)
+        target_link_libraries(flash_tokenizer PRIVATE OpenMP::OpenMP_CXX)
+    endif ()
+
+    target_compile_options(flash_tokenizer PRIVATE ${COMPILE_OPTIONS})
+else (BUILD_PYTHON_MODULE)
     if (CUSTOM_PYTHON)
         find_package(Python COMPONENTS Interpreter Development.Module REQUIRED)
     endif ()
@@ -93,24 +111,4 @@ if (BUILD_PYTHON_MODULE)
     target_compile_definitions(_core PRIVATE VERSION_INFO=${PROJECT_VERSION})
 
     install(TARGETS _core DESTINATION flash_tokenizer)
-endif ()
-
-if (BUILD_EXECUTABLE)
-
-    add_executable(flash_tokenizer main.cpp ${SRC_FILES})
-    target_include_directories(flash_tokenizer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-    #target_include_directories(flash_tokenizer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/include)
-    #    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    #        if (WIN32)
-    #            if (OpenMP_CXX_FOUND)
-    #                target_link_libraries(flash_tokenizer PRIVATE OpenMP::OpenMP_CXX)
-    #            endif ()
-    #        endif ()
-    #    endif ()
-
-    if (OpenMP_CXX_FOUND)
-        target_link_libraries(flash_tokenizer PRIVATE OpenMP::OpenMP_CXX)
-    endif ()
-
-    target_compile_options(flash_tokenizer PRIVATE ${COMPILE_OPTIONS})
 endif ()

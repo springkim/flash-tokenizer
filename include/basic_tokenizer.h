@@ -59,6 +59,7 @@ public:
 
         std::vector<std::string> output_tokens;
         output_tokens.reserve(1024);
+
         for (const auto &token: orig_tokens) {
             this->split_function[this->do_lower_case](token, output_tokens);
         }

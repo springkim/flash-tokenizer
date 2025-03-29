@@ -235,6 +235,7 @@ FORCE_INLINE bool is_chinese_char(const int &cp) {
     }
     return output;
 }
+
 [[nodiscard]] FORCE_INLINE std::pmr::string clean_and_tokenize(const std::string &text) {
     thread_local char buffer[2048];
     thread_local std::pmr::monotonic_buffer_resource pool(buffer, sizeof(buffer));
@@ -266,6 +267,7 @@ FORCE_INLINE void run_split_on_punc(const std::string_view text, std::vector<std
     const size_t sz = text.size();
     size_t i = 0, word_start = 0;
     bool in_word = false, has_punc = false;
+
     while (i < sz) {
         const int cp = utf8_to_codepoint(text, i);
         const size_t len = utf8_char_length(text[i]);
