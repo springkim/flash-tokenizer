@@ -25,6 +25,14 @@ conda activate python311 && python -m build
 conda activate python312 && python -m build
 conda activate python313 && python -m build
 
+
+conda activate python38 && CC=clang CXX=clang++ python -m build
+conda activate python39 && CC=clang CXX=clang++ python -m build
+conda activate python310 && CC=clang CXX=clang++ python -m build
+conda activate python311 && CC=clang CXX=clang++ python -m build
+conda activate python312 && CC=clang CXX=clang++ python -m build
+conda activate python313 && CC=clang CXX=clang++ python -m build
+
 python -m build
 ```
 
