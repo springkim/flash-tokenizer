@@ -105,7 +105,7 @@ The world's fastest CPU tokenizer library!
 ### Requirements
  * `Windows(AMD64)`, `MacOS(ARM64)`, `Ubuntu(x86-64)` .
  * `g++` / `clang++` / `MSVC`.
- * python 3.9 ~ 3.12.
+ * python 3.8 ~ 3.13.
 
 ### Install from [PIP](https://pypi.org/project/flash-tokenizer/)
 ```bash
@@ -114,9 +114,9 @@ pip install -U flash-tokenizer
 ```
 ```bash
 # Ubuntu
-sudo apt install gcc g++ make cmake -y
+sudo apt install clang make cmake -y
 pip install setuptools wheel build pybind11
-CC=gcc CXX=g++ pip install -U flash-tokenizer
+CC=clang CXX=clang++ pip install -U flash-tokenizer
 ```
 ```bash
 # MacOS
@@ -392,7 +392,7 @@ hash_vocab('bert-base-cased-vocab.txt', 'voc_hash.txt')
 - [x] ~~Support for parallel processing option for single encode.~~
 - [ ] `circle.ai`
   - [ ] Implement distribution of compiled wheel packages for installation.
-- [ ] SIMD
+- [x] SIMD
 - [ ] ~~CUDA Version.~~
 
 
