@@ -117,8 +117,10 @@ public:
         TRIE_INTEGER current = 0;
         size_t best_length = 0;
         TRIE_INTEGER best_index = -1;
-        #pragma omp simd reduction(max:best_length) private(current) lastprivate(best_index)
-        for (size_t pos = start; pos < token.size(); ++pos) {
+        
+        // Process characters without SIMD until a break condition or end of string
+        size_t pos = start;
+        while (pos < token.size()) {
             const unsigned char c = token[pos];
             if (!this->pool[current].explicitChild[c])
                 break;
@@ -127,7 +129,9 @@ public:
                 best_length = pos - start + 1;
                 best_index = this->pool[current].vocab_index;
             }
+            pos++;
         }
+        
         return {best_length, best_index};
     }
 };
@@ -162,8 +166,10 @@ public:
         TRIE_INTEGER current = 0;
         size_t best_length = 0;
         TRIE_INTEGER best_index = -1;
-        #pragma omp simd reduction(max:best_length) private(current) lastprivate(best_index)
-        for (size_t pos = start; pos < token.size(); ++pos) {
+        
+        // Process characters without SIMD until a break condition or end of string
+        size_t pos = start;
+        while (pos < token.size()) {
             const unsigned char c = token[pos];
             const TRIE_INTEGER child = this->pool[current].children[c];
             if (child == -1)
@@ -173,7 +179,9 @@ public:
                 best_length = pos - start + 1;
                 best_index = this->pool[current].vocab_index;
             }
+            pos++;
         }
+        
         return {best_length, best_index};
     }
 
