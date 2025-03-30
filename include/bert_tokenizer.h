@@ -160,24 +160,22 @@ public:
             if (!this->pool) {
                 this->pool = std::make_unique<ThreadPool>();
             }
-            std::vector<std::future<std::invoke_result_t<
-                decltype(&std::decay_t<decltype(*this)>::tokenizer_ids),
-                decltype(this), const std::string &, int, const std::string &>>>
-                futures;
-            futures.reserve(texts.size());
-
-            for (const auto &text : texts) {
-                futures.push_back(pool->enqueue([this, &text, max_length, &padding] {
-                    return this->tokenizer_ids(text, max_length, padding);
-                }));
-            }
-
+            
+            // Use batch_enqueue to reduce overhead of task creation and synchronization
+            auto process_text = [this, max_length, &padding](const std::string &text) {
+                return this->tokenizer_ids(text, max_length, padding);
+            };
+            
+            // Batch process all texts at once
+            auto futures = pool->batch_enqueue(process_text, texts);
+            
+            // Collect results
             std::vector<std::vector<int>> input_ids;
             input_ids.reserve(futures.size());
             for (auto &f : futures) {
                 input_ids.push_back(f.get());
             }
-
+            
             return input_ids;
         } else {
             std::vector<std::vector<int> > input_ids;
@@ -272,24 +270,22 @@ public:
             if (!this->pool) {
                 this->pool = std::make_unique<ThreadPool>();
             }
-            std::vector<std::future<std::invoke_result_t<
-                decltype(&std::decay_t<decltype(*this)>::tokenizer_ids),
-                decltype(this), const std::string &, int, const std::string &>>>
-                futures;
-            futures.reserve(texts.size());
-
-            for (const auto &text : texts) {
-                futures.push_back(pool->enqueue([this, &text, max_length, &padding] {
-                    return this->tokenizer_ids(text, max_length, padding);
-                }));
-            }
-
+            
+            // Use batch_enqueue to reduce overhead of task creation and synchronization
+            auto process_text = [this, max_length, &padding](const std::string &text) {
+                return this->tokenizer_ids(text, max_length, padding);
+            };
+            
+            // Batch process all texts at once
+            auto futures = pool->batch_enqueue(process_text, texts);
+            
+            // Collect results
             std::vector<std::vector<int>> input_ids;
             input_ids.reserve(futures.size());
             for (auto &f : futures) {
                 input_ids.push_back(f.get());
             }
-
+            
             return input_ids;
         } else {
             std::vector<std::vector<int> > input_ids;
