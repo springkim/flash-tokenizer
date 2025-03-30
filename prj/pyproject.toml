@@ -20,7 +20,8 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12"
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13"
 ]
 dependencies = [
     "numpy>=1.24.0",
@@ -34,15 +35,7 @@ Issues = "https://github.com/NLPOptimize/flash-tokenizer/issues"
 [tool.scikit-build]
 wheel.expand-macos-universal-tags = true
 cmake.build-type = "Release"
-
-#[tool.scikit-build.cmake.define]
-#CMAKE_C_COMPILER = "C:/mingw64/bin/cc.exe"
-#CMAKE_CXX_COMPILER = "C:/mingw64/bin/g++.exe"
-#CMAKE_GENERATOR = "MinGW Makefiles"
-
+cmake.define.CMAKE_CXX_STANDARD = "17"
 
 [tool.setuptools.exclude-package-data]
 "*" = ["*.pyc", "*.pyo", "*.so", "*.pyd", "__pycache__"]
-
-[tool.setuptools]
-packages = {find = {exclude = ["tests", "docs", "examples", "excluded_folder"]}}

@@ -36,6 +36,12 @@ conda activate python313 && CC=clang CXX=clang++ python -m build
 python -m build
 ```
 
+```
+docker pull quay.io/pypa/manylinux_2_28
+CIBW_PLATFORM=linux cibuildwheel --output-dir wheelhouse
+
+```
+
 
 ```bash
 
