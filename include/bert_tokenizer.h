@@ -157,38 +157,28 @@ public:
             max_length = this->model_max_length;
         }
         if (parallel) {
-#ifdef _OPENMP
-            std::vector<std::vector<int> > input_ids(texts.size());
-
-#pragma omp parallel for
-            for (size_t i = 0; i < texts.size(); ++i) {
-                input_ids[i] = this->tokenizer_ids(texts[i], max_length, padding);
+            if (!this->pool) {
+                this->pool = std::make_unique<ThreadPool>();
             }
+            std::vector<std::future<std::invoke_result_t<
+                decltype(&std::decay_t<decltype(*this)>::tokenizer_ids),
+                decltype(this), const std::string &, int, const std::string &>>>
+                futures;
+            futures.reserve(texts.size());
+
+            for (const auto &text : texts) {
+                futures.push_back(pool->enqueue([this, &text, max_length, &padding] {
+                    return this->tokenizer_ids(text, max_length, padding);
+                }));
+            }
+
+            std::vector<std::vector<int>> input_ids;
+            input_ids.reserve(futures.size());
+            for (auto &f : futures) {
+                input_ids.push_back(f.get());
+            }
+
             return input_ids;
-#else
-      if (!this->pool) {
-        this->pool = std::make_unique<ThreadPool>();
-      }
-      std::vector<std::future<std::invoke_result_t<
-          decltype(&std::decay_t<decltype(*this)>::tokenizer_ids),
-          decltype(this), const std::string &, int, const std::string &>>>
-          futures;
-      futures.reserve(texts.size());
-
-      for (const auto &text : texts) {
-        futures.push_back(pool->enqueue([this, &text, max_length, &padding] {
-          return this->tokenizer_ids(text, max_length, padding);
-        }));
-      }
-
-      std::vector<std::vector<int>> input_ids;
-      input_ids.reserve(futures.size());
-      for (auto &f : futures) {
-        input_ids.push_back(f.get());
-      }
-
-      return input_ids;
-#endif
         } else {
             std::vector<std::vector<int> > input_ids;
             input_ids.reserve(texts.size());
@@ -279,39 +269,28 @@ public:
             max_length = this->model_max_length;
         }
         if (parallel) {
-#ifndef _OPENMP
-      if (!this->pool) {
-        this->pool = std::make_unique<ThreadPool>();
-      }
-      std::vector<std::future<std::invoke_result_t<
-          decltype(&std::decay_t<decltype(*this)>::tokenizer_ids),
-          decltype(this), const std::string &, int, const std::string &>>>
-          futures;
-      futures.reserve(texts.size());
+            if (!this->pool) {
+                this->pool = std::make_unique<ThreadPool>();
+            }
+            std::vector<std::future<std::invoke_result_t<
+                decltype(&std::decay_t<decltype(*this)>::tokenizer_ids),
+                decltype(this), const std::string &, int, const std::string &>>>
+                futures;
+            futures.reserve(texts.size());
 
-      for (const auto &text : texts) {
-        futures.push_back(pool->enqueue([this, &text, max_length, &padding] {
-          return this->tokenizer_ids(text, max_length, padding);
-        }));
-      }
+            for (const auto &text : texts) {
+                futures.push_back(pool->enqueue([this, &text, max_length, &padding] {
+                    return this->tokenizer_ids(text, max_length, padding);
+                }));
+            }
 
-      std::vector<std::vector<int>> input_ids;
-      input_ids.reserve(futures.size());
-      for (auto &f : futures) {
-        input_ids.push_back(f.get());
-      }
-
-      return input_ids;
-#else
-            std::vector<std::vector<int> > input_ids(texts.size());
-
-#pragma omp parallel for
-            for (size_t i = 0; i < texts.size(); ++i) {
-                input_ids[i] = this->tokenizer_ids(texts[i], max_length, padding);
+            std::vector<std::vector<int>> input_ids;
+            input_ids.reserve(futures.size());
+            for (auto &f : futures) {
+                input_ids.push_back(f.get());
             }
 
             return input_ids;
-#endif
         } else {
             std::vector<std::vector<int> > input_ids;
             input_ids.reserve(texts.size());
