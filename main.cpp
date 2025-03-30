@@ -223,8 +223,12 @@ int main() {
   // sample_test();
   // exit(0);
   cout << cpp_env() << endl;
+  cout << "Running single-threaded test:" << endl;
   perf_test(false);
 
+  
+  cout << "Running multi-threaded test:" << endl;
+  perf_test(true);
   // cout << g_1 << "\t" << g_2 << "\t" << g_3 << "\t" << g_4 << endl;
   return 0;
 }
