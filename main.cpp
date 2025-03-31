@@ -171,7 +171,7 @@ DataList::llmlingua_2_bert_base_multilingual_cased_meetingbank =
         "llmlingua-2-bert-base-multilingual-cased-meetingbank";
 
 void perf_test(bool parallel = false) {
-    const auto DATASET = DataList::bert_base_multilingual_cased;
+    const auto DATASET = DataList::llmlingua_2_bert_base_multilingual_cased_meetingbank;
     cout << "Start performance test..." << endl;
     const TestData td(DATASET);
     std::chrono::duration<double> diff{};
@@ -224,7 +224,7 @@ int main() {
     // sample_test();
     // exit(0);
     cout << cpp_env() << endl;
-    perf_test(false);
+    perf_test(true);
 
     // cout << g_1 << "\t" << g_2 << "\t" << g_3 << "\t" << g_4 << endl;
     return 0;

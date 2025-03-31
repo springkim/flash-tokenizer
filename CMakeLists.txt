@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-set(PROJECT_VERSION_STR 1.1.8)
+set(PROJECT_VERSION_STR 1.1.9)
 
 project(flash_tokenizer VERSION ${PROJECT_VERSION_STR})
 set(CMAKE_CXX_STANDARD 17)
@@ -17,8 +17,7 @@ set(SRC_FILES prj/src/bert_tokenizer.cpp)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     set(COMPILE_OPTIONS -Ofast -funroll-loops -floop-nest-optimize
-            -fstrict-overflow -fomit-frame-pointer
-            -fipa-cp-clone -fno-rtti)
+            -fstrict-overflow -fomit-frame-pointer -fipa-cp-clone)
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     add_compile_options(-Wno-deprecated-declarations)
     add_definitions(-DDO_FORCE_INLINE)
