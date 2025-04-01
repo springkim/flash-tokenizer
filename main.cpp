@@ -159,7 +159,7 @@ void perf_test(bool parallel = false) {
     std::string rt = parallel ? "MultiThread" : "SingleThread";
     cout << "\t" << rt << endl;
     cout << "\t" << td.tokenizer->env.OS << endl;
-    cout << "\t" << td.tokenizer->env.COMPILER << endl;
+    cout << "\t" << td.tokenizer->env.COMPILER_NAME << endl;
     cout << "\t" << td.tokenizer->env.PARALLEL_LIB << endl;
     cout << "\t" << VERSION_INFO_STR(VERSION_INFO) << endl;
 
@@ -192,7 +192,7 @@ void perf_test(bool parallel = false) {
 
     ofstream fout;
     fout.open(base_dir + "../log.csv", std::ios::app);
-    fout << CONFIG << "," << DATASET << "," << rt << "," << td.tokenizer->env.OS << "," << td.tokenizer->env.COMPILER << "," << td.tokenizer->env.PARALLEL_LIB
+    fout << CONFIG << "," << DATASET << "," << rt << "," << td.tokenizer->env.OS << "," << td.tokenizer->env.COMPILER_NAME << "," << td.tokenizer->env.PARALLEL_LIB
             << "," << VERSION_INFO_STR(VERSION_INFO) << "," << elapsed_time << "," << td.texts.size() << "," << accuracy << std::endl;
     fout.close();
 }

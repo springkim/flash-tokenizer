@@ -86,7 +86,7 @@ protected:
 public:
     struct Environment {
         std::string OS;
-        std::string COMPILER;
+        std::string COMPILER_NAME;
         std::string PARALLEL_LIB;
     } env{};
 
@@ -102,7 +102,7 @@ public:
         this->UNK_NUM = vocab.get(this->UNK);
         this->_version_ = cpp_env(VERSION_INFO_STR(VERSION_INFO));
         this->env.OS = GetOS();
-        this->env.COMPILER = GetCompiler();
+        this->env.COMPILER_NAME = GetCompiler();
         this->env.PARALLEL_LIB = GetParallelImpl();
         if (accent_mapping.empty()) {
             accent_mapping = initializeCharMap();
