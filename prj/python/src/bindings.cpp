@@ -84,8 +84,8 @@ PYBIND11_MODULE(_core, m) {
                      return self.encode(text_str, padding_str, max_length);
                  },
                  py::arg("text"),
-                 py::arg("padding") = "max_length",
-                 py::arg("max_length") = -1)
+                 py::arg("padding"),
+                 py::arg("max_length"))
             .def("batch_encode",
                  [](FlashBertTokenizer &self,
                     const std::vector<std::string> &texts,
@@ -95,9 +95,9 @@ PYBIND11_MODULE(_core, m) {
                      return self.batch_encode(texts, padding_str, max_length, parallel);
                  },
                  py::arg("texts"),
-                 py::arg("padding") = "max_length",
-                 py::arg("max_length") = -1,
-                 py::arg("parallel") = true,
+                 py::arg("padding"),
+                 py::arg("max_length"),
+                 py::arg("parallel"),
                  "Encode a batch of texts into token IDs. Returns a list of token ID lists.");
 
 #ifdef VERSION_INFO

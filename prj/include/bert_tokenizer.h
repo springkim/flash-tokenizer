@@ -78,19 +78,22 @@ protected:
     int SEP_NUM{};
     int UNK_NUM{};
     const int model_max_length;
+#ifndef _OPENMP
     std::unique_ptr<ThreadPool> pool{};
+#endif
 
     const Vocab vocab;
     const BasicTokenizer basic;
     const WordpieceTokenizer wordpiece;
     std::string _version_ = "Unknown";
+
 public:
     struct Environment {
         std::string CPU;
         std::string OS;
         std::string COMPILER;
         std::string PARALLEL_LIB;
-    }env;
+    } env;
 
 public:
     explicit FlashBertTokenizer(const std::string &vocab_file,
@@ -214,7 +217,6 @@ public:
 class FlashBertTokenizerBidirectional : public FlashBertTokenizer {
 protected:
     WordpieceBackwardTokenizer wordpiece_backward;
-    std::unique_ptr<ThreadPool> pool2{};
 
 public:
     explicit FlashBertTokenizerBidirectional(
@@ -223,7 +225,6 @@ public:
         : FlashBertTokenizer(vocab_file, do_lower_case, model_max_length,
                              tokenize_chinese_chars),
           wordpiece_backward(vocab, this->UNK) {
-        this->pool2 = std::make_unique<ThreadPool>(2);
     }
 
     std::vector<int> tokenizer_ids(const std::string &text, const int max_length,
@@ -253,9 +254,9 @@ public:
                 std::move(i0.begin(), i0.end(), std::back_inserter(input_ids));
             } else {
                 std::copy_if(i0.begin(), i0.end(), std::back_inserter(filtered_i0),
-                             [](int i) { return i > 4; });
+                             [](const int i) { return i > 4; });
                 std::copy_if(i1.begin(), i1.end(), std::back_inserter(filtered_i1),
-                             [](int i) { return i > 4; });
+                             [](const int i) { return i > 4; });
                 std::vector<int> &target =
                         compare_ids(filtered_i0, filtered_i1) ? i0 : i1;
                 std::move(target.begin(), target.end(), std::back_inserter(input_ids));
@@ -273,8 +274,8 @@ public:
     }
 
     std::vector<int> encode(const std::string &text,
-                            const std::string &padding = "max_length",
-                            int max_length = -1) override {
+                            const std::string &padding,
+                            int max_length) override {
         if (max_length == -1) {
             max_length = this->model_max_length;
         }
@@ -283,8 +284,8 @@ public:
 
     std::vector<std::vector<int> >
     batch_encode(const std::vector<std::string> &texts,
-                 const std::string &padding = "max_length", int max_length = -1,
-                 const bool parallel = true) override {
+                 const std::string &padding, int max_length,
+                 const bool parallel) override {
         if (max_length == -1) {
             max_length = this->model_max_length;
         }

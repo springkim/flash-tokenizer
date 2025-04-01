@@ -42,7 +42,7 @@
 #include<string>
 #include<sstream>
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
 #elif defined(__linux__)
 #include <fstream>
@@ -54,7 +54,7 @@
 #endif
 
 static std::string GetCPUName() {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(_WIN64)
     int cpuInfo[4] = {-1};
     char cpuBrandString[0x40];
     memset(cpuBrandString, 0, sizeof(cpuBrandString));
