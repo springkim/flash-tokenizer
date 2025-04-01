@@ -7,10 +7,10 @@ titles = [
     'そのように二番目に死を偽装して生き残るようになったイタドリがどうして初めて見る自分をこんなに気遣ってくれるのかと尋ねると「私が大切にする人たちがあなたを大切にするから」と答えては'
 ]
 
-vocab_file = "sample/vocab.txt"
+vocab_file = "vocab.txt"
 
-tokenizer1 = BertTokenizerFlash(vocab_file, do_lower_case=False)
-tokenizer2 = BertTokenizer(vocab_file, do_lower_case=False)
+tokenizer1 = BertTokenizerFlash(vocab_file, do_lower_case=False, model_max_length=512)
+tokenizer2 = BertTokenizer(vocab_file, do_lower_case=False, model_max_length=512)
 
 for title in titles:
     print(title)

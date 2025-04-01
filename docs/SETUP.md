@@ -1,57 +1,48 @@
-x## Python
+# Setup
 
-Windows, MacOS는 아래 python 공식 홈페이지에서 설치한다.
+### This document is a summary of the information required to build C++ instead of Python.
 
-Python 3.9 부터 3.12까지 지원한다.
 
-* https://www.python.org/downloads/release/python-3129/
-* https://www.python.org/downloads/release/python-3116/
-* https://www.python.org/downloads/release/python-31011/
+# 01. 7z
 
-Windows는 `C:/Users/%USERNAME%/AppData/Local/Programs/Python/Python312/python.exe` 과 같은 경로에 설치한다.
+### Windows
 
-MacOS는 `/usr/local/bin/python3` 과 같은 경로에 설치된다.
+Download the `7-Zip installer for Windows` from [https://www.7-zip.org/download.html](https://www.7-zip.org/download.html) and run it to copy the following files to `C:\Windows\System32\`.
 
-Linux의 경우는 아래처럼 설치하거나 직접 빌드해서 사용해도 괜찮다.
+* Lang
+* 7z.dll
+* 7z.exe
+* 7-zip.dll
+* 7-zip32.dll
 
-```
-# Ubuntu
-sudo apt install python3 python3-pip -y
-# CentOS
-sudo apt install python3 python3-pip -y
-```
+### Ubuntu
+sudo apt install p7zip-full -y
+### CentOS
+sudo yum install p7zip p7zip-plugins -y
+### MacOS
+brew install p7zip
 
-어떻게 설치를 하던 `/usr/bin/python3` 에 python이 있으면 상관없다.
+# 02. Compiler
 
+### MacOS(clang)
 
 ```bash
-brew install dosbox
+brew install llvm libomp
+
+# Add the following to ~/.zshrc
+export PATH="$(brew --prefix llvm)/bin:$PATH"
+export LDFLAGS="-L$(brew --prefix llvm)/lib"
+export CPPFLAGS="-I$(brew --prefix llvm)/include"
+export CC="$(brew --prefix llvm)/bin/clang"
+export CXX="$(brew --prefix llvm)/bin/clang++"
 ```
 
-##Windows
-docker run -it -v "C:/Users/spring/Documents/git_NLPOptimize/flash-tokenize:/io" quay.io/pypa/manylinux2014_x86_64 bash
+### Windows(MSVC 2022)
+
+Install Visual Studio 2022 from https://visualstudio.microsoft.com/ko/vs/community/.
+
+### Ubuntu(g++)
+
+```bash
+sudo apt install gcc g++ make cmake -y
 ```
-curl -L "https://www.python.org/ftp/python/3.12.1/Python-3.12.1.tgz" -o Python-3.12.1.tgz
-tar -xzvf Python-3.12.1.tgz
-cd Python-3.12.1
-./configure
-./configure --enable-optimizations
-make
-```
-
-## manylinux
-
-docker pull quay.io/pypa/manylinux2014_x86_64
-
-docker run -it --name manylinux -v $(pwd):/io quay.io/pypa/manylinux2014_x86_64 /bin/bash
-yum install python3 python3-pip wget git vim curl -y
-
-
-
-docker run --rm -v $(pwd):/io quay.io/pypa/manylinux2014_x86_64 bash -c "\
-cd /io && \
-curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && \
-python get-pip.py && \
-python -m pip install setuptools wheel build pybind11 && \
-python setup.py build && \
-auditwheel repair dist/*.whl -w wheelhouse/"

@@ -66,12 +66,16 @@ The world's fastest CPU tokenizer library!
 ## News
 
 > [!IMPORTANT]  
+> **[Mar 31 2025]**
+> - Modified to provide pre-built whl files for each OS.
+>
 > **[Mar 22 2025]**
+>
 > - Added [DFA](https://blog.cloudflare.com/pt-br/making-waf-ai-models-go-brr/#:~:text=We%20can%20also%20tune%20Aho,settings%20based%20on%20this%20recommendation) to AC Trie.
-> 
+>
 > **[Mar 21 2025]**
 > - Improving Tokenizer Accuracy
-> 
+>
 > **[Mar 19 2025]** 
 > - Memory reduction and slight performance improvement by applying LinMaxMatching from [Aho–Corasick](https://en.wikipedia.org/wiki/Aho%E2%80%93Corasick_algorithm) algorithm.
 > - Improved branch pipelining of all functions and force-inline applied.
@@ -80,22 +84,22 @@ The world's fastest CPU tokenizer library!
 > - `punctuation`,` control`, and `whitespace` are defined as constexprs in advance and used as Bloom filters.
 > - Reduce unnecessary memory allocation with statistical memory profiling.
 > -  In ✨FlashTokenizer✨, `bert-base-uncased` can process **35K** texts per second on a single core, with an approximate processing time of **28ns** per text.
-> 
+>
 > **[Mar 18 2025]** 
 > - Improvements to the accuracy of the BasicTokenizer have improved the overall accuracy and, in particular, produce more accurate results for Unicode input.
 >
->**[Mar 14 2025]** 
+> **[Mar 14 2025]** 
 > - The performance of the `WordPieceTokenizer` and `WordPieceBackwordTokenizer` has been improved using [Trie](https://en.wikipedia.org/wiki/Trie), which was introduced in [Fast WordPiece Tokenization](https://arxiv.org/abs/2012.15524).
 > - Using `FastPoolAllocator` in `std::list` improves performance in SingleEncoding, but it is not thread-safe, so `std::list<std::string>` is used as is in BatchEncoding. In BatchEncoding, `OPENMP` is completely removed and only `std::thread` is used.
-> 
+>
 > **[Mar 10 2025]** 
 > - Performance improvements through faster token mapping with robin_hood and memory copy minimization with **std::list**.
-> 
-> 
+>
+>
 > #### Token Ids Map Table Performance Test.
-> 
+>
 > Token and Ids Map used the fastest `robin_hood::unordered_flat_map<std::string, int>`.
->  
+>
 > **[Mar 09 2025]** Completed development of flash-tokenizer for BertTokenizer.
 
 
@@ -105,23 +109,24 @@ The world's fastest CPU tokenizer library!
 ### Requirements
  * `Windows(AMD64)`, `MacOS(ARM64)`, `Ubuntu(x86-64)` .
  * `g++` / `clang++` / `MSVC`.
- * python 3.8 ~ 3.13.
+ * `python 3.8 ~ 3.13`.
 
 ### Install from [PIP](https://pypi.org/project/flash-tokenizer/)
+
+
+
+On Windows, you need to install [vc_redist.x64.exe](https://github.com/NLPOptimize/flash-tokenizer/releases/download/Packages/VC_redist.x64.exe).
 ```bash
-# Windows(Visual Studio)
+# Windows
 pip install -U flash-tokenizer
 ```
 ```bash
-# Ubuntu
-sudo apt install clang make cmake -y
-pip install setuptools wheel build pybind11
-CC=clang CXX=clang++ pip install -U flash-tokenizer
+# Linux
+pip install -U flash-tokenizer
 ```
 ```bash
 # MacOS
-brew install gcc
-CC=gcc CXX=g++ pip install -U flash-tokenizer
+pip install -U flash-tokenizer
 ```
 
 ### Install from Source

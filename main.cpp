@@ -9,13 +9,37 @@
 #include <sstream>
 #include <string>
 #include <vector>
-
+#include <zlib.h>
+#include<Python.h>
 using namespace std;
+#ifdef _MSC_VER
+static const std::string base_dir = "../";
+#else
+static const std::string base_dir = "";
+#endif
+class Data {
+public:
+    struct Config {
+        const std::string bert_base_cased = "bert-base-cased";
+        const std::string bert_base_uncased = "bert-base-uncased";
+        const std::string bert_base_multilingual_cased = "bert-base-multilingual-cased";
+        const std::string bert_base_multilingual_uncased = "bert-base-multilingual-uncased";
+        const std::string bert_base_chinese = "bert-base-chinese";
+        const std::string kcbert_base = "kcbert-base";
+        const std::string KR_BERT = "KR-BERT";
+        const std::string llmlingua_2_bert_base_multilingual_cased_meetingbank = "llmlingua-2-bert-base-multilingual-cased-meetingbank";
+    } config;
+
+    struct Dataset {
+        const std::string texts_en = "texts_en.all.parquet";
+        const std::string texts_ko = "texts_ko.all.parquet";
+        const std::string texts_cn = "texts_cn.all.parquet";
+        const std::string texts_multilingual = "texts_multilingual.all.parquet";
+    } dataset;
+};
 
 class TestData {
 public:
-    std::string text_file;
-    std::string list_file;
     std::string vocab_file;
     std::string tokenizer_config_file;
     bool do_lower_case{};
@@ -25,25 +49,21 @@ public:
     FlashBertTokenizer *tokenizer = nullptr;
 
     ~TestData() {
-        if (tokenizer != nullptr) {
+        if (this->tokenizer != nullptr) {
             delete tokenizer;
         }
     }
 
-    explicit TestData(const std::string &config) {
-        std::ostringstream dirname;
-        dirname << "../dataset/" << config << "/";
-        this->text_file = dirname.str() + "texts.txt";
-        this->list_file = dirname.str() + "ids.txt";
+    explicit TestData(const std::string &config, const std::string &dataset) {
+        std::ostringstream dirname, data_path;
+
+        dirname << base_dir << "../dataset/config/" << config << "/";
+        data_path << base_dir << "../dataset/data/" << dataset;
+
         this->vocab_file = dirname.str() + "vocab.txt";
         this->tokenizer_config_file = dirname.str() + "tokenizer_config.json";
 
-        this->texts = load_text_lines(this->text_file);
-        auto gts_tmp = load_text_lines(this->list_file);
-        for (auto &gt: gts_tmp) {
-            this->gts.push_back(parseNumbersFromString(gt));
-        }
-
+        pycall(data_path.str(), config);
         this->load_tokenizer_config(this->tokenizer_config_file);
         if (config == "KR-BERT") {
             tokenizer = new FlashBertTokenizerBidirectional(this->vocab_file,
@@ -53,93 +73,69 @@ public:
         }
     }
 
-    static std::vector<std::string>
-    load_text_lines(const std::string &file_path) {
-        std::ifstream file(file_path, std::ios::binary | std::ios::ate);
-        if (!file)
-            return {};
-        const std::streamsize size = file.tellg();
-        file.seekg(0, std::ios::beg);
-        std::vector<char> buffer(size);
-        if (!file.read(buffer.data(), size))
-            return {};
-        std::vector<std::string> lines;
-        lines.reserve(size / 30);
-        const char *start = buffer.data();
-        const char *end = start + size;
-        const char *ptr = start;
-        while (ptr < end) {
-            const char *lineEnd = std::find(ptr, end, '\n');
-            std::string_view line(ptr, lineEnd - ptr);
-            if (!line.empty() && line.back() == '\r')
-                line.remove_suffix(1);
-            lines.emplace_back(line);
-            ptr = lineEnd < end ? lineEnd + 1 : end;
+
+    void pycall(const std::string &parquet_path, const std::string &config) {
+        Py_Initialize();
+        PyRun_SimpleString("import sys; sys.path.append('.')");
+        PyObject *pName = PyUnicode_DecodeFSDefault("data_loader");
+        PyObject *pModule = PyImport_Import(pName);
+        Py_DECREF(pName);
+        if (!pModule) {
+            PyErr_Print();
+            std::cerr << "Cannot load module." << std::endl;
+            exit(1);
         }
-        return lines;
-    }
+        PyObject *pFunc = PyObject_GetAttrString(pModule, "load_parquet");
+        if (!pFunc || !PyCallable_Check(pFunc)) {
+            PyErr_Print();
+            std::cerr << "Cannot find function." << std::endl;
+            Py_XDECREF(pFunc);
+            Py_DECREF(pModule);
+            Py_Finalize();
+            exit(1);
+        }
+        PyObject *pArgs = PyTuple_Pack(2,
+                                       PyUnicode_FromString(parquet_path.c_str()),
+                                       PyUnicode_FromString(config.c_str()));
 
-    static std::vector<int> parseNumbersFromString(const std::string_view input) {
-        std::vector<int> numbers;
-        numbers.reserve(100);
-        const char *str = input.data();
-        const char *const end = str + input.length();
-        const auto open_bracket =
-                static_cast<const char *>(memchr(str, '[', end - str));
-        if (!open_bracket)
-            return numbers;
-        str = open_bracket + 1;
+        PyObject *pReturn = PyObject_CallObject(pFunc, pArgs);
+        Py_DECREF(pArgs);
 
-        while (str < end) {
-            while (str < end) {
-                if (*str == ']')
-                    return numbers;
-                if ((*str >= '0' && *str <= '9') || *str == '-')
-                    break;
-                ++str;
-            }
-            if (str >= end)
-                break;
-            bool negative = false;
-            if (*str == '-') {
-                negative = true;
-                ++str;
-            }
-            int num = 0;
-            while (str < end && *str >= '0' && *str <= '9') {
-                num = (num << 3) + (num << 1) + (*str - '0');
-                ++str;
-            }
-
-            numbers.push_back(negative ? -num : num);
+        if (!pReturn) {
+            PyErr_Print();
+            std::cerr << "Function call failed." << std::endl;
+            Py_DECREF(pFunc);
+            Py_DECREF(pModule);
+            Py_Finalize();
+            exit(1);
         }
 
-        return numbers;
-    }
+        PyObject *pyTexts = PyTuple_GetItem(pReturn, 0); // texts list
+        PyObject *pyGts = PyTuple_GetItem(pReturn, 1); // gts list
 
-    static vector<vector<int> > load_gt(const std::string &file_path) {
-        std::ifstream file(file_path, std::ios::binary | std::ios::ate);
-        if (!file)
-            return {};
-        const std::streamsize size = file.tellg();
-        file.seekg(0, std::ios::beg);
-        std::vector<char> buffer(size);
-        if (!file.read(buffer.data(), size))
-            return {};
-        std::vector<std::vector<int> > gts;
-        gts.reserve(size / 50);
-        const char *start = buffer.data();
-        const char *end = start + size;
-        const char *ptr = start;
-        while (ptr < end) {
-            const char *lineEnd = std::find(ptr, end, '\n');
-            std::string_view line(ptr, lineEnd - ptr);
-            if (!line.empty() && line.back() == '\r')
-                line.remove_suffix(1);
-            gts.push_back(parseNumbersFromString(line));
-            ptr = lineEnd < end ? lineEnd + 1 : end;
+        Py_ssize_t num_texts = PyList_Size(pyTexts);
+        for (Py_ssize_t i = 0; i < num_texts; ++i) {
+            PyObject *pyItem = PyList_GetItem(pyTexts, i);
+            const char *text = PyUnicode_AsUTF8(pyItem);
+            this->texts.emplace_back(text);
         }
-        return gts;
+
+        Py_ssize_t num_gts = PyList_Size(pyGts);
+        for (Py_ssize_t i = 0; i < num_gts; ++i) {
+            PyObject *pyInnerList = PyList_GetItem(pyGts, i);
+            Py_ssize_t inner_size = PyList_Size(pyInnerList);
+            std::vector<int> inner_vec;
+            for (Py_ssize_t j = 0; j < inner_size; ++j) {
+                PyObject *pyInt = PyList_GetItem(pyInnerList, j);
+                int val = static_cast<int>(PyLong_AsLong(pyInt));
+                inner_vec.push_back(val);
+            }
+            this->gts.push_back(inner_vec);
+        }
+        Py_DECREF(pReturn);
+        Py_DECREF(pFunc);
+        Py_DECREF(pModule);
+        Py_Finalize();
     }
 
     void load_tokenizer_config(const std::string &file_path) {
@@ -151,40 +147,33 @@ public:
     }
 };
 
-struct DataList {
-    static const std::string bert_base_cased;
-    static const std::string bert_base_uncased;
-    static const std::string bert_base_multilingual_cased;
-    static const std::string kcbert_base;
-    static const std::string KR_BERT;
-    static const std::string llmlingua_2_bert_base_multilingual_cased_meetingbank;
-};
-
-const std::string DataList::bert_base_cased = "bert-base-cased";
-const std::string DataList::bert_base_uncased = "bert-base-uncased";
-const std::string DataList::bert_base_multilingual_cased =
-        "bert-base-multilingual-cased";
-const std::string DataList::kcbert_base = "kcbert-base";
-const std::string DataList::KR_BERT = "KR-BERT";
-const std::string
-DataList::llmlingua_2_bert_base_multilingual_cased_meetingbank =
-        "llmlingua-2-bert-base-multilingual-cased-meetingbank";
 
 void perf_test(bool parallel = false) {
-    const auto DATASET = DataList::llmlingua_2_bert_base_multilingual_cased_meetingbank;
+    const auto CONFIG = Data().config.bert_base_multilingual_cased;
+    const auto DATASET = Data().dataset.texts_multilingual;
+    cout << "Load dataset..." << endl;
+    cout << "\t" << CONFIG << endl;
+    cout << "\t" << DATASET << endl;
+    const TestData td(CONFIG, DATASET);
     cout << "Start performance test..." << endl;
-    const TestData td(DATASET);
+    std::string rt = parallel ? "MultiThread" : "SingleThread";
+    cout << "\t" << rt << endl;
+    cout << "\t" << td.tokenizer->env.CPU << endl;
+    cout << "\t" << td.tokenizer->env.OS << endl;
+    cout << "\t" << td.tokenizer->env.COMPILER << endl;
+    cout << "\t" << td.tokenizer->env.PARALLEL_LIB << endl;
+    cout << "\t" << VERSION_INFO_STR(VERSION_INFO) << endl;
+
     std::chrono::duration<double> diff{};
     size_t correct = 0;
     const auto t_beg = std::chrono::system_clock::now();
     vector<vector<int> > ids_list;
     if (parallel) {
-        ids_list =
-                td.tokenizer->batch_encode(td.texts, "longest", td.model_max_length);
+        ids_list = td.tokenizer->batch_encode(td.texts, "longest", td.model_max_length);
     } else {
+        ids_list.reserve(td.texts.size());
         for (size_t i = 0; i < td.texts.size(); i++) {
-            auto ids =
-                    td.tokenizer->encode(td.texts[i], "longest", td.model_max_length);
+            auto ids = td.tokenizer->encode(td.texts[i], "longest", td.model_max_length);
             ids_list.emplace_back(ids);
         }
     }
@@ -195,37 +184,28 @@ void perf_test(bool parallel = false) {
     for (size_t i = 0; i < td.texts.size(); i++) {
         correct += ids_list[i] == td.gts[i];
     }
-    const std::vector<std::string> thread_option = {"[ST]", "[MT]"};
-    std::cout << thread_option[parallel] << " | " << elapsed_time << " seconds"
-            << "  |  ";
+
+    std::cout << rt << " | " << elapsed_time << " seconds" << "  |  ";
     std::cout << td.texts.size() << "  |  ";
     const double accuracy = static_cast<double>(correct) * 100.0 /
                             static_cast<double>(td.texts.size());
     std::cout << accuracy << " % Accuracy" << std::endl;
-    std::cout << "--------------" << std::endl;
+
+    ofstream fout;
+    fout.open(base_dir + "../log.csv", std::ios::app);
+    fout << CONFIG << "," << DATASET << "," << rt << "," << td.tokenizer->env.CPU << "," << td.tokenizer->env.OS << "," << td.tokenizer->env.COMPILER << "," << td.tokenizer->env.PARALLEL_LIB
+            << "," << VERSION_INFO_STR(VERSION_INFO) << "," << elapsed_time << "," << td.texts.size() << "," << accuracy << std::endl;
+    fout.close();
 }
 
-void sample_test() {
-    const std::vector<std::string> sample_texts = {
-        "세상 어떤 짐승이 이를 드러내고 사냥을 해? 약한 짐승이나 몸을 부풀리지, "
-        "진짜 짐승은 누구보다 침착하지."
-    };
-    FlashBertTokenizerBidirectional tokenizer("../sample/vocab.txt", false, 512);
-
-    auto tokens = tokenizer.tokenize(sample_texts[0]);
-    for (auto &token: tokens) {
-        std::cout << token << " ";
-    }
-}
 
 int main() {
     std::ios::sync_with_stdio(false);
 
-    // sample_test();
-    // exit(0);
+
     cout << cpp_env() << endl;
     perf_test(true);
 
-    // cout << g_1 << "\t" << g_2 << "\t" << g_3 << "\t" << g_4 << endl;
+    //cout << g_1 << "\t" << g_2 << "\t" << g_3 << "\t" << g_4 << endl;
     return 0;
 }

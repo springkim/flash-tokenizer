@@ -84,6 +84,13 @@ protected:
     const BasicTokenizer basic;
     const WordpieceTokenizer wordpiece;
     std::string _version_ = "Unknown";
+public:
+    struct Environment {
+        std::string CPU;
+        std::string OS;
+        std::string COMPILER;
+        std::string PARALLEL_LIB;
+    }env;
 
 public:
     explicit FlashBertTokenizer(const std::string &vocab_file,
@@ -96,7 +103,10 @@ public:
         this->SEP_NUM = vocab.get(this->SEP);
         this->UNK_NUM = vocab.get(this->UNK);
         this->_version_ = cpp_env(VERSION_INFO_STR(VERSION_INFO));
-
+        this->env.CPU = GetCPUName();
+        this->env.OS = GetOS();
+        this->env.COMPILER = GetCompiler();
+        this->env.PARALLEL_LIB = GetParallelImpl();
         if (accent_mapping.empty()) {
             accent_mapping = initializeCharMap();
         }

@@ -42,6 +42,95 @@
 #include<string>
 #include<sstream>
 
+#ifdef _WIN32
+#include <windows.h>
+#elif defined(__linux__)
+#include <fstream>
+#elif defined(__APPLE__)
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#else
+
+#endif
+
+static std::string GetCPUName() {
+#ifdef _WIN32
+    int cpuInfo[4] = {-1};
+    char cpuBrandString[0x40];
+    memset(cpuBrandString, 0, sizeof(cpuBrandString));
+
+    __cpuid(cpuInfo, 0x80000002);
+    memcpy(cpuBrandString, cpuInfo, sizeof(cpuInfo));
+
+    __cpuid(cpuInfo, 0x80000003);
+    memcpy(cpuBrandString + 16, cpuInfo, sizeof(cpuInfo));
+
+    __cpuid(cpuInfo, 0x80000004);
+    memcpy(cpuBrandString + 32, cpuInfo, sizeof(cpuInfo));
+
+    return cpuBrandString;
+#elif defined(__linux__)
+    std::ifstream file("/proc/cpuinfo");
+    std::string line;
+    std::string cpuName;
+
+    if (file.is_open()) {
+        while (std::getline(file, line)) {
+            if (line.substr(0, 10) == "model name") {
+                cpuName = line.substr(line.find(":") + 2);
+                break;
+            }
+        }
+        file.close();
+    }
+
+    return cpuName;
+#elif defined(__APPLE__)
+    char buffer[100];
+    size_t bufferSize = sizeof(buffer);
+
+    if (sysctlbyname("machdep.cpu.brand_string", &buffer, &bufferSize, NULL, 0) == 0) {
+        return std::string(buffer);
+    }
+    return "Unknown CPU";
+#else
+    return "Unknown Platform";
+#endif
+}
+
+static std::string GetOS() {
+#if defined(_WIN32) || defined(_WIN64)
+    std::string os = "Windows";
+#elif defined(__linux__)
+    std::string os = "Linux";
+#elif defined(__APPLE__)
+    std::string os = "MacOS";
+#endif
+    return os;
+}
+
+static std::string GetCompiler() {
+    std::ostringstream compiler_version;
+#ifdef __clang__
+    compiler_version << "clang++(" << __clang_major__ << "." << __clang_minor__ << "." << __clang_patchlevel__ << ")";
+#elif defined(__GNUC__)
+    compiler_version << "g++(" << __GNUC__ << "." << __GNUC_MINOR__ << "." << __GNUC_PATCHLEVEL__ << ")";
+#elif defined(_MSC_VER)
+    compiler_version << "MSVC(" << _MSC_VER << ")";
+#elif defined(__INTEL_COMPILER)
+    std::cout << "Intel(" << __INTEL_COMPILER << ")";
+#endif
+    return compiler_version.str();
+}
+
+static std::string GetParallelImpl() {
+#ifdef _OPENMP
+    return "OpenMP";
+#else
+    return "std::thread";
+#endif
+}
+
 static std::string cpp_env(const std::string &version = "dev") {
     std::ostringstream oss;
     oss << "[" << version << "] ";

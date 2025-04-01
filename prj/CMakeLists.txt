@@ -1,12 +1,10 @@
 cmake_minimum_required(VERSION 3.15)
 
-set(PROJECT_VERSION_STR 1.1.9)
+set(PROJECT_VERSION_STR 1.2.0)
 
 project(flash_tokenizer VERSION ${PROJECT_VERSION_STR})
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-
 
 
 option(BUILD_PYTHON_MODULE "Build the Python module" ON)
