@@ -44,7 +44,6 @@
 #include "env.h"
 #include "functions.h"
 #include "robin_hood.h"
-#include "thread_pool.h"
 #include "version.h"
 #include "vocab.h"
 #include <algorithm>
@@ -78,9 +77,6 @@ protected:
     int SEP_NUM{};
     int UNK_NUM{};
     const int model_max_length;
-#ifndef _OPENMP
-    std::unique_ptr<ThreadPool> pool{};
-#endif
 
     const Vocab vocab;
     const BasicTokenizer basic;
@@ -162,8 +158,8 @@ public:
 
     [[nodiscard]] virtual std::vector<std::vector<int> >
     batch_encode(const std::vector<std::string> &texts,
-                 const std::string &padding = "max_length", int max_length = -1,
-                 const bool parallel = true) const {
+                 const std::string &padding, int max_length,
+                 const bool parallel) const {
         if (max_length == -1) {
             max_length = this->model_max_length;
         }
@@ -177,28 +173,14 @@ public:
             }
             return input_ids;
 #else
-      if (!this->pool) {
-        this->pool = std::make_unique<ThreadPool>();
-      }
-      std::vector<std::future<std::invoke_result_t<
-          decltype(&std::decay_t<decltype(*this)>::tokenizer_ids),
-          decltype(this), const std::string &, int, const std::string &>>>
-          futures;
-      futures.reserve(texts.size());
+            std::vector<std::vector<int> > input_ids;
+            input_ids.reserve(texts.size());
+            for (auto &text: texts) {
+                input_ids.push_back(this->encode(text, padding, max_length));
+            }
 
-      for (const auto &text : texts) {
-        futures.push_back(pool->enqueue([this, &text, max_length, &padding] {
-          return this->tokenizer_ids(text, max_length, padding);
-        }));
-      }
+            return input_ids;
 
-      std::vector<std::vector<int>> input_ids;
-      input_ids.reserve(futures.size());
-      for (auto &f : futures) {
-        input_ids.push_back(f.get());
-      }
-
-      return input_ids;
 #endif
         } else {
             std::vector<std::vector<int> > input_ids;
@@ -288,35 +270,20 @@ public:
             max_length = this->model_max_length;
         }
         if (parallel) {
-#ifndef _OPENMP
-      if (!this->pool) {
-        this->pool = std::make_unique<ThreadPool>();
-      }
-      std::vector<std::future<std::invoke_result_t<
-          decltype(&std::decay_t<decltype(*this)>::tokenizer_ids),
-          decltype(this), const std::string &, int, const std::string &>>>
-          futures;
-      futures.reserve(texts.size());
-
-      for (const auto &text : texts) {
-        futures.push_back(pool->enqueue([this, &text, max_length, &padding] {
-          return this->tokenizer_ids(text, max_length, padding);
-        }));
-      }
-
-      std::vector<std::vector<int>> input_ids;
-      input_ids.reserve(futures.size());
-      for (auto &f : futures) {
-        input_ids.push_back(f.get());
-      }
-
-      return input_ids;
-#else
+#ifdef _OPENMP
             std::vector<std::vector<int> > input_ids(texts.size());
 
 #pragma omp parallel for
             for (int i = 0; i < texts.size(); ++i) {
                 input_ids[i] = this->tokenizer_ids(texts[i], max_length, padding);
+            }
+
+            return input_ids;
+#else
+            std::vector<std::vector<int> > input_ids;
+            input_ids.reserve(texts.size());
+            for (auto &text: texts) {
+                input_ids.push_back(this->encode(text, padding, max_length));
             }
 
             return input_ids;

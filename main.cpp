@@ -168,7 +168,7 @@ void perf_test(bool parallel = false) {
     const auto t_beg = std::chrono::system_clock::now();
     vector<vector<int> > ids_list;
     if (parallel) {
-        ids_list = td.tokenizer->batch_encode(td.texts, "longest", td.model_max_length);
+        ids_list = td.tokenizer->batch_encode(td.texts, "longest", td.model_max_length, parallel);
     } else {
         ids_list.reserve(td.texts.size());
         for (size_t i = 0; i < td.texts.size(); i++) {
