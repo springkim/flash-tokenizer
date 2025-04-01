@@ -89,11 +89,10 @@ protected:
 
 public:
     struct Environment {
-        std::string CPU;
         std::string OS;
         std::string COMPILER;
         std::string PARALLEL_LIB;
-    } env;
+    } env{};
 
 public:
     explicit FlashBertTokenizer(const std::string &vocab_file,
@@ -106,7 +105,6 @@ public:
         this->SEP_NUM = vocab.get(this->SEP);
         this->UNK_NUM = vocab.get(this->UNK);
         this->_version_ = cpp_env(VERSION_INFO_STR(VERSION_INFO));
-        this->env.CPU = GetCPUName();
         this->env.OS = GetOS();
         this->env.COMPILER = GetCompiler();
         this->env.PARALLEL_LIB = GetParallelImpl();
@@ -119,9 +117,9 @@ public:
 
     virtual std::string version() { return this->_version_; }
 
-    virtual std::vector<int> tokenizer_ids(const std::string &text,
-                                           const int max_length,
-                                           const std::string &padding) {
+    [[nodiscard]] virtual std::vector<int> tokenizer_ids(const std::string &text,
+                                                         const int max_length,
+                                                         const std::string &padding) const {
         const size_t allowed_length = max_length - 1;
         std::vector<int> input_ids;
         input_ids.reserve(1024);
@@ -153,19 +151,19 @@ public:
         return tokens;
     }
 
-    virtual std::vector<int> encode(const std::string &text,
-                                    const std::string &padding = "max_length",
-                                    int max_length = -1) {
+    [[nodiscard]] virtual std::vector<int> encode(const std::string &text,
+                                                  const std::string &padding = "max_length",
+                                                  int max_length = -1) const {
         if (max_length == -1) {
             max_length = this->model_max_length;
         }
         return this->tokenizer_ids(text, max_length, padding);
     }
 
-    virtual std::vector<std::vector<int> >
+    [[nodiscard]] virtual std::vector<std::vector<int> >
     batch_encode(const std::vector<std::string> &texts,
                  const std::string &padding = "max_length", int max_length = -1,
-                 const bool parallel = true) {
+                 const bool parallel = true) const {
         if (max_length == -1) {
             max_length = this->model_max_length;
         }
@@ -227,8 +225,8 @@ public:
           wordpiece_backward(vocab, this->UNK) {
     }
 
-    std::vector<int> tokenizer_ids(const std::string &text, const int max_length,
-                                   const std::string &padding) override {
+    [[nodiscard]] std::vector<int> tokenizer_ids(const std::string &text, const int max_length,
+                                                 const std::string &padding) const override {
         const size_t allowed_length = max_length - 1;
         std::vector<int> input_ids;
         input_ids.reserve(1024);
@@ -273,19 +271,19 @@ public:
         return input_ids;
     }
 
-    std::vector<int> encode(const std::string &text,
-                            const std::string &padding,
-                            int max_length) override {
+    [[nodiscard]] std::vector<int> encode(const std::string &text,
+                                          const std::string &padding,
+                                          int max_length) const override {
         if (max_length == -1) {
             max_length = this->model_max_length;
         }
         return this->tokenizer_ids(text, max_length, padding);
     }
 
-    std::vector<std::vector<int> >
+    [[nodiscard]] std::vector<std::vector<int> >
     batch_encode(const std::vector<std::string> &texts,
                  const std::string &padding, int max_length,
-                 const bool parallel) override {
+                 const bool parallel) const override {
         if (max_length == -1) {
             max_length = this->model_max_length;
         }

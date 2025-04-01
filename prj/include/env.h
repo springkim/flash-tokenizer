@@ -42,61 +42,6 @@
 #include<string>
 #include<sstream>
 
-#if defined(_WIN32) || defined(_WIN64)
-#include <windows.h>
-#elif defined(__linux__)
-#include <fstream>
-#elif defined(__APPLE__)
-#include <sys/types.h>
-#include <sys/sysctl.h>
-#else
-
-#endif
-
-static std::string GetCPUName() {
-#if defined(_WIN32) || defined(_WIN64)
-    int cpuInfo[4] = {-1};
-    char cpuBrandString[0x40];
-    memset(cpuBrandString, 0, sizeof(cpuBrandString));
-
-    __cpuid(cpuInfo, 0x80000002);
-    memcpy(cpuBrandString, cpuInfo, sizeof(cpuInfo));
-
-    __cpuid(cpuInfo, 0x80000003);
-    memcpy(cpuBrandString + 16, cpuInfo, sizeof(cpuInfo));
-
-    __cpuid(cpuInfo, 0x80000004);
-    memcpy(cpuBrandString + 32, cpuInfo, sizeof(cpuInfo));
-
-    return cpuBrandString;
-#elif defined(__linux__)
-    std::ifstream file("/proc/cpuinfo");
-    std::string line;
-    std::string cpuName;
-
-    if (file.is_open()) {
-        while (std::getline(file, line)) {
-            if (line.substr(0, 10) == "model name") {
-                cpuName = line.substr(line.find(":") + 2);
-                break;
-            }
-        }
-        file.close();
-    }
-
-    return cpuName;
-#elif defined(__APPLE__)
-    char buffer[100];
-    size_t bufferSize = sizeof(buffer);
-
-    if (sysctlbyname("machdep.cpu.brand_string", &buffer, &bufferSize, NULL, 0) == 0) {
-        return std::string(buffer);
-    }
-    return "Unknown CPU";
-#else
-    return "Unknown Platform";
-#endif
-}
 
 static std::string GetOS() {
 #if defined(_WIN32) || defined(_WIN64)
