@@ -46,4 +46,5 @@ log.csv
 error_notebook.txt
 perftest_history.md
 perftest/other/
+perftest/test.py
 extract.py

@@ -52,9 +52,9 @@ The world's fastest CPU tokenizer library!
 > [!TIP]
 > 
 >  * Implemented in C++17.
->     * **MacOS**: `g++(14.2.0)`  or `clang++(16.0.0)`.
->     * **Windows**: `g++(8.1.0)-MinGW64`  or, `Visual Studio 2019`.
->     * **Ubuntu**: `g++(11.4.0)` or  `clang++(14.0.0)`. 
+>     * **MacOS**: `clang++`.
+>     * **Windows**: `Visual Studio 2022`.
+>     * **Ubuntu**: `g++`. 
 >
 > * Equally fast in Python via pybind11.
 > * Support for parallel processing at the C++ level using OPENMP.
@@ -66,7 +66,11 @@ The world's fastest CPU tokenizer library!
 
 > [!IMPORTANT]  
 > **[Apr 02 2025]**
-> - 
+> - Add performance benchmarking code
+> - Performance benchmarking is conducted using Python, and required packages can be installed via [setup.sh](./perftest/setup.sh).  
+> - A minor performance improvement has been achieved by adding the `tokenize_early_stop` feature to `BasicTokenizer`.  
+> - [OpenMP](https://www.openmp.org/) demonstrated better performance than `std::thread` across Windows, Linux, and macOS, so we've switched exclusively to OpenMP.
+> 
 > **[Mar 31 2025]**
 > - Modified to provide pre-built whl files for each OS.
 >
@@ -322,6 +326,14 @@ Accuracy is the result of measuring [google's BertTokenizerFast](https://github.
 | Blingfire                      |       39.3765s | 2,000,000 |   99.9780% |
 | **FlashBertTokenizer**             |       22.8820s | 2,000,000 |   99.8970% |
 
+| Tokenizer                      |   Elapsed Time |     texts |   Accuracy |
+|--------------------------------|----------------|-----------|------------|
+| **FlashBertTokenizer**             |       22.0901s | 2,000,001 |   99.8971% |
+| Blingfire                      |       37.9836s | 2,000,001 |   99.9780% |
+| rust_tokenizers(guillaume-be)  |       98.0366s | 2,000,001 |   99.9976% |
+| BertTokenizerFast(PaddleNLP)   |      208.6889s | 2,000,001 |   99.7964% |
+| BertTokenizerFast(Huggingface) |      219.2644s | 2,000,001 |   99.7964% |
+| FastBertTokenizer(Tensorflow)  |      413.9725s | 2,000,001 |   99.7892% |
 
 #### [KR-BERT](https://github.com/snunlp/KR-BERT)
 
@@ -398,7 +410,7 @@ hash_vocab('bert-base-cased-vocab.txt', 'voc_hash.txt')
 - [x] ~~Support for parallel processing option for single encode.~~
 - [ ] `circle.ai`
   - [ ] Implement distribution of compiled wheel packages for installation.
-- [x] SIMD
+- [ ] SIMD
 - [ ] ~~CUDA Version.~~
 
 
@@ -411,10 +423,31 @@ FlashTokenizer is inspired by [FlashAttention](https://github.com/Dao-AILab/flas
 
 ## Performance comparison
 
-* https://fastberttokenizer.gjung.com/ (C# Impl)
-* https://github.com/huggingface/tokenizers (Rust Impl)
-* BPE
+* **WordPiece**
+  * 📒  [huggingface/tokenizers (Rust)](https://github.com/huggingface/tokenizers)
+    * Rust implementation of transformers.BertTokenizerFast, provided as a Python package.
+    * 🔵 **Provided as a Python package.**
+  * 🔥 [FastBertTokenizer (C#)](https://fastberttokenizer.gjung.com)
+    * It demonstrates incredibly fast performance, but accuracy significantly decreases for non-English queries.
+  * ❌ [BertTokenizers (C#)](https://github.com/NMZivkovic/BertTokenizers)
+    * It can be confirmed from [FastBertTokenizer (C#) VS BertTokenizers (C#)](https://github.com/georg-jung/FastBertTokenizer/tree/master?tab=readme-ov-file#comparison-to-berttokenizers) that `FastBertTokenizer(C#)` is faster.
+  * 🔥 [rust-tokenizers (Rust)](https://github.com/guillaume-be/rust-tokenizers)
+    * Slower than BertTokenizerFlash and Blingfire but faster and more accurate than other implementations.
+    * 🔵 **Provided as a Python package.**
+  * ❌ [tokenizers-cpp (C++)](https://github.com/mlc-ai/tokenizers-cpp)
+    * `tokenizer-cpp` is a wrapper around SentencePiece and HuggingFace's Rust implementation, so performance benchmarking is meaningless.
+  * ❌ [bertTokenizer (Java)](https://github.com/ankiteciitkgp/bertTokenizer)
+    * Java is not covered.
+  * ✅ [ZhuoruLin/fast-wordpiece (Rust)](https://github.com/ZhuoruLin/fast-wordpiece)
+    * A Rust implementation using LinMaxMatching, runnable only in Rust, and expected to be no faster than the C++ implementation.
+  * ❌ [huggingface_tokenizer_cpp (C++)](https://github.com/Sorrow321/huggingface_tokenizer_cpp)
+    * Very slow due to naive C++ implementation.
+  * ❌ [SeanLee97/BertWordPieceTokenizer.jl (Julia)](https://github.com/SeanLee97/BertWordPieceTokenizer.jl)
+    * Julia is not covered.
+* **BPE**
   * https://github.com/openai/tiktoken
+* **SentencePiece**
+  * [google/sentencepiece (C++)](https://github.com/google/sentencepiece)
 
 
 
@@ -438,3 +471,5 @@ FlashTokenizer is inspired by [FlashAttention](https://github.com/Dao-AILab/flas
 * https://medium.com/@anmolkohli/my-notes-on-bert-tokenizer-and-model-98dc22d0b64
 * https://nocomplexity.com/documents/fossml/nlpframeworks.html
 * https://github.com/martinus/robin-hood-hashing
+* https://arxiv.org/abs/2012.15524
+* https://github.com/google/highway

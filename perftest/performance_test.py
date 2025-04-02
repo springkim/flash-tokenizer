@@ -59,8 +59,8 @@ def single_encode_performance_test(tokenizer: Any, texts: List[str], gts: List[L
 
 if __name__ == '__main__':
 
-    config_path = "../dataset/config/" + Config.bert_base_cased
-    dataset_path = "../dataset/data/" + Data.texts_en_all
+    config_path = "../dataset/config/" + Config.llmlingua_2_bert_base_multilingual_cased_meetingbank
+    dataset_path = "../dataset/data/" + Data.texts_multilingual_all
 
     print("Initializing tokenizer...")
     tokenizer1 = HuggingFaceBertTokenizerFast(config_path)
@@ -75,6 +75,10 @@ if __name__ == '__main__':
         tokenizers.append(tokenizer4)
     tokenizer5 = FlashBertTokenizer(config_path)
     tokenizers.append(tokenizer5)
+
+    tokenizer6 = RustBertTokenizer(config_path)
+    tokenizers.append(tokenizer6)
+
     print("Loading data...")
     texts, gts = load_parquet(dataset_path, os.path.basename(config_path))
 
@@ -90,6 +94,8 @@ if __name__ == '__main__':
 
     headers = ["Tokenizer", "Elapsed Time", "texts", "Accuracy"]
     colalign = ("left", "right", "right", "right")
+
+    tables.sort(key=lambda x: float(x[1][:-1]))
 
     s = f'### {os.path.basename(config_path)} ({os.path.basename(dataset_path)})\n'
     s += tabulate(tables, headers=headers, tablefmt="github", colalign=colalign)
