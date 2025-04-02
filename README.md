@@ -17,6 +17,10 @@ The world's fastest CPU tokenizer library!
 
 
 
+### [▶️ Performance Benchmark Demo Video](https://www.youtube.com/watch?v=a_sTiAXeSE0)
+
+
+
 
 > [!NOTE]  
 >

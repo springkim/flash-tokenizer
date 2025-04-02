@@ -16,6 +16,8 @@
 [FlashTokenizer](https://pypi.org/project/flash-tokenizer/) 是一个用于LLM推理的**高性能BertTokenizer的C++实现**。它在速度和准确性方面领先于其他所有分词器，类似于[FlashAttention](https://github.com/Dao-AILab/flash-attention) 和 [FlashInfer](https://github.com/flashinfer-ai/flashinfer)，相比于transformers库中的`BertTokenizerFast`快了**10倍**。
 
 
+### [▶️ 性能测试演示视频](https://www.bilibili.com/video/BV176fuYCEmx)
+
 
 > [!NOTE]  
 > ### 为什么？

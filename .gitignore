@@ -48,4 +48,5 @@ perftest_history.md
 perftest/other/
 perftest/test.py
 perftest/.*/
+docs/blackpaper/
 extract.py

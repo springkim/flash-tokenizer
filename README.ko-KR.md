@@ -15,6 +15,10 @@ The world's fastest CPU tokenizer library!
 
 
 
+### [▶️ 성능 비교 데모](https://www.youtube.com/watch?v=a_sTiAXeSE0)
+
+
+
 > [!NOTE]  
 > ### FlashTokenizer를 사용해야 하는 이유.
 > - 많은 개발자들은 [Huggingface의 BertTokenizerFast](https://github.com/huggingface/transformers/blob/main/src/transformers/models/bert/tokenization_bert_fast.py)보다 더 빠르고, 더 정확하며, 사용하기 쉬운 토크나이저가 필요합니다. ([링크1](https://stackoverflow.com/questions/75595699/huggingfaces-berttokenizerfast-is-between-39000-and-258300-times-slower-than-ex), [링크2](https://github.com/PaddlePaddle/PaddleNLP/issues/8565), [링크3](https://blog.csdn.net/xhw205/article/details/129578988))
