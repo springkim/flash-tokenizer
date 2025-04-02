@@ -2,6 +2,7 @@ from flash_tokenizer import BertTokenizerFlash
 from transformers import BertTokenizer
 
 titles = [
+    '绝不能放弃，世界上没有失败，只有放弃。',
     'is there any doubt about it "None whatsoever"',
     "세상 어떤 짐승이 이를 드러내고 사냥을 해? 약한 짐승이나 몸을 부풀리지, 진짜 짐승은 누구보다 침착하지.",
     'そのように二番目に死を偽装して生き残るようになったイタドリがどうして初めて見る自分をこんなに気遣ってくれるのかと尋ねると「私が大切にする人たちがあなたを大切にするから」と答えては'

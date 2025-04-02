@@ -1,3 +1,5 @@
+# Performance Test
+
 This directory benchmarks accuracy and performance between the Python-bound FlashBertTokenizer and several other BertTokenizer implementations.
 
 Performance and accuracy comparisons are conducted between FlashBertTokenizer and the following four tokenizer implementations via Python interfaces.
@@ -19,3 +21,13 @@ Accuracy is measured as the proportion of input_ids whose output token IDs exact
 
 * [Microsoft's BlingFire](https://github.com/microsoft/BlingFire)
   * A unique tokenizer developed by Microsoft, notable for having the fastest processing speed.
+
+* [guillaume-be's rust-tokenizers](https://github.com/guillaume-be/rust-tokenizers)
+  * Slower than BertTokenizerFlash and Blingfire but faster and more accurate than other implementations.
+
+```bash
+brew install rust
+git clone https://github.com/guillaume-be/rust-tokenizers
+cd rust-tokenizers/python-bindings
+python setup.py install
+```

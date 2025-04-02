@@ -148,8 +148,8 @@ public:
 
 
 void perf_test(bool parallel = false) {
-    const auto CONFIG = Data().config.bert_base_cased;
-    const auto DATASET = Data().dataset.texts_en;
+    const auto CONFIG = Data().config.bert_base_chinese;
+    const auto DATASET = Data().dataset.texts_multilingual;
     cout << "Load dataset..." << endl;
     cout << "\t" << CONFIG << endl;
     cout << "\t" << DATASET << endl;

@@ -5,12 +5,15 @@ import os
 from tabulate import tabulate
 from bert_tokenizer import *
 import pandas as pd
-from enum import Enum
 from typing import List, Tuple, Dict, Callable, Any, Union
-import subprocess
 import logging
+import threading
+import time
+from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, TimeRemainingColumn
+import queue
 
-logging.disable(logging.INFO)
+
+# logging.disable(logging.INFO)
 
 
 class Config:
@@ -45,19 +48,20 @@ def load_parquet(file_path: str, config: str, ratio: Union[float, None] = None, 
     return texts[:size], gts[:size]
 
 
-def single_encode_performance_test(tokenizer: Any, texts: List[str], gts: List[List[int]], show_tqdm: bool = True):
+def single_encode_performance_test(progress, task_id, tokenizer: Any, texts: List[str], gts: List[List[int]], result_queue):
     t_beg = time.time()
     correct = 0
-    with tqdm(total=len(texts), desc=f"{tokenizer.name:<{35}}", disable=not show_tqdm, ncols=100) as pbar:
-        for text, gt in zip(texts, gts):
-            input_ids = tokenizer(text, padding="longest")
-            correct += gt == input_ids
-            pbar.update(1)
+
+    for text, gt in zip(texts, gts):
+        input_ids = tokenizer(text, padding="longest")
+        correct += gt == input_ids
+        progress.update(task_id, advance=1)
     t_end = time.time()
 
     accuracy = correct * 100 / len(texts)
     elapsed = t_end - t_beg
-    return [tokenizer.name, f'{elapsed:.4f}s', f"{len(texts):,}", f'{accuracy:.4f}%']
+    item = [f'{tokenizer.name}', f'{elapsed:.4f}s', f"{len(texts):,}", f'{accuracy:.4f}%']
+    result_queue[task_id] = item
 
 
 if __name__ == '__main__':
@@ -65,7 +69,7 @@ if __name__ == '__main__':
     config_path = "../dataset/config/" + Config.bert_base_chinese
     dataset_path = "../dataset/data/" + Data.texts_cn_all
 
-    print("Initializing tokenizer...")
+    logging.info("Initializing tokenizer...")
     tokenizer1 = HuggingFaceBertTokenizerFast(config_path)
     tokenizer2 = PaddleNLPBertTokenizerFast(config_path)
     tokenizers = [tokenizer1, tokenizer2]
@@ -77,34 +81,51 @@ if __name__ == '__main__':
         tokenizer4 = BlingfireBertTokenizer(config_path, pair_int=pair_int, unk=bf_unk)
         tokenizers.append(tokenizer4)
     tokenizer5 = FlashBertTokenizer(config_path)
-    tokenizers.append(tokenizer5)
 
     tokenizer6 = RustBertTokenizer(config_path)
     tokenizers.append(tokenizer6)
+    tokenizers.append(tokenizer5)
 
     logging.info("Loading data...")
-    texts, gts = load_parquet(dataset_path, os.path.basename(config_path))
+    texts, gts = load_parquet(dataset_path, os.path.basename(config_path), count=100000)
 
     logging.info("Performance comparisons are conducted using the following tokenizers:")
     for tokenizer in tokenizers:
         logging.info(f'\t{tokenizer.name}')
     logging.info('-' * 30)
 
-    tables = []
-    for tokenizer in tokenizers:
-        r = single_encode_performance_test(tokenizer, texts, gts)
-        tables.append(r)
+    tasks = []
+    for tokenizer in reversed(tokenizers):
+        tasks.append((tokenizer.name, tokenizer, texts, gts))
+    result_queue = [None] * len(tokenizers)
+
+    with Progress(
+            TextColumn("[bold blue]{task.description}"),
+            BarColumn(),
+            TaskProgressColumn(),
+            TimeRemainingColumn()
+    ) as progress:
+        threads = []
+        task_ids = []
+
+        for task in tasks:
+            task_id = progress.add_task(f"[red]{task[0]}", total=len(texts))
+            task_ids.append(task_id)
+            t = threading.Thread(target=single_encode_performance_test, args=(progress, task_id, task[1], task[2], task[3], result_queue))
+            threads.append(t)
+
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
 
     headers = ["Tokenizer", "Elapsed Time", "texts", "Accuracy"]
     colalign = ("left", "right", "right", "right")
 
-    tables.sort(key=lambda x: float(x[1][:-1]))
+    tables = result_queue
+    # tables.sort(key=lambda x: float(x[1][:-1]))
 
-    s = f'### {os.path.basename(config_path)} ({os.path.basename(dataset_path)})\n'
-    s += tabulate(tables, headers=headers, tablefmt="github", colalign=colalign)
-    s += '\n\n'
+    s = f'{os.path.basename(config_path)} ({os.path.basename(dataset_path)})\n'
+    s += tabulate(tables, headers=headers, tablefmt="simple_grid", colalign=colalign)
 
     print(s)
-
-    with open("perftest_history.md", "at", encoding="utf-8") as f:
-        f.write(s)

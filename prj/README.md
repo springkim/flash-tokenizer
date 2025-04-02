@@ -1,3 +1,6 @@
 # flash-tokenizer/prj
 
-[View Usage](./USAGE.md)
+### 🇺🇸 [Usage (English)](./USAGE.md)
+
+
+### 🇨🇳 [用法 (简体中文)](./USAGE.zh-CN.md)
