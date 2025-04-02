@@ -9,7 +9,6 @@
 #include <sstream>
 #include <string>
 #include <vector>
-#include <zlib.h>
 #include<Python.h>
 using namespace std;
 #ifdef _MSC_VER
