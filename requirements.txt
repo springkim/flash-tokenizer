@@ -6,3 +6,4 @@ setuptools
 wheel
 requests
 pandas
+pyarrow

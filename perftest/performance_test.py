@@ -59,8 +59,8 @@ def single_encode_performance_test(tokenizer: Any, texts: List[str], gts: List[L
 
 if __name__ == '__main__':
 
-    config_path = "../dataset/config/" + Config.llmlingua_2_bert_base_multilingual_cased_meetingbank
-    dataset_path = "../dataset/data/" + Data.texts_multilingual_all
+    config_path = "../dataset/config/" + Config.kcbert_base
+    dataset_path = "../dataset/data/" + Data.texts_ko_all
 
     print("Initializing tokenizer...")
     tokenizer1 = HuggingFaceBertTokenizerFast(config_path)

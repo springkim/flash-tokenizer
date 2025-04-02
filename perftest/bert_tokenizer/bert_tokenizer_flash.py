@@ -5,7 +5,7 @@ from .config import get_config
 class FlashBertTokenizer:
     def __init__(self, config_dir: str, bidirectional: bool = False):
         config = get_config(config_dir)
-        self.tokenizer = BertTokenizerFlash(vocab_file=config.vocab_file, do_lower_case=config.do_lower_case, model_max_length=config.model_max_length, tokenize_chinese_chars=config.tokenize_chinese_chars
+        self.tokenizer = BertTokenizerFlash(config.vocab_file, do_lower_case=config.do_lower_case, model_max_length=config.model_max_length, tokenize_chinese_chars=config.tokenize_chinese_chars
                                             , bidirectional=bidirectional)
         self.model_max_length = config.model_max_length
 
