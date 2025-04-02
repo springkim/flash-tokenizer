@@ -150,7 +150,8 @@ FORCE_INLINE int utf8_to_codepoint(const std::string_view str, const size_t pos)
     if ((b0 & 0xF0) == 0xE0) {
         if (pos + 2 >= len)
             return 0;
-        unsigned char b1 = bytes[1], b2 = bytes[2];
+        const unsigned char b1 = bytes[1];
+        const unsigned char b2 = bytes[2];
         if (((b1 & 0xC0) != 0x80) || ((b2 & 0xC0) != 0x80))
             return 0;
         const int cp = ((b0 & 0x0F) << 12) | ((b1 & 0x3F) << 6) | (b2 & 0x3F);
@@ -159,7 +160,9 @@ FORCE_INLINE int utf8_to_codepoint(const std::string_view str, const size_t pos)
     if ((b0 & 0xF8) == 0xF0) {
         if (pos + 3 >= len)
             return 0;
-        unsigned char b1 = bytes[1], b2 = bytes[2], b3 = bytes[3];
+        const unsigned char b1 = bytes[1];
+        const unsigned char b2 = bytes[2];
+        const unsigned char b3 = bytes[3];
         if (((b1 & 0xC0) != 0x80) || ((b2 & 0xC0) != 0x80) || ((b3 & 0xC0) != 0x80))
             return 0;
         const int cp = ((b0 & 0x07) << 18) | ((b1 & 0x3F) << 12) | ((b2 & 0x3F) << 6) | (b3 & 0x3F);
@@ -204,7 +207,6 @@ FORCE_INLINE bool is_chinese_char(const int &cp) {
     if (cp >= 0x4E00 && cp <= 0x9FFF) return true;
     if (cp >= 0x3400 && cp <= 0x4DBF) return true;
     if (cp >= 0xF900 && cp <= 0xFAFF) return true;
-
     if (cp >= 0x20000 && cp <= 0x2A6DF) return true;
     if (cp >= 0x2A700 && cp <= 0x2B73F) return true;
     if (cp >= 0x2B740 && cp <= 0x2B81F) return true;
@@ -214,11 +216,16 @@ FORCE_INLINE bool is_chinese_char(const int &cp) {
 }
 
 [[nodiscard]] FORCE_INLINE std::pmr::string clean_text(const std::string &text) {
-    thread_local char buffer[2048];
-    thread_local std::pmr::monotonic_buffer_resource pool(buffer, sizeof(buffer));
-    pool.release();
-    std::pmr::string output{&pool};
-    output.reserve(1024);
+    //thread_local char buffer[2048];
+    //thread_local std::pmr::monotonic_buffer_resource pool(buffer, sizeof(buffer));
+    //thread_local std::string space = " ";
+    //pool.release();
+    //std::pmr::string output{&pool};
+    thread_local std::pmr::string output(2048, ' ');
+    //output.reserve(1024);
+
+    std::fill(output.begin(), output.end(), ' ');
+    size_t output_index = 0;
     for (size_t i = 0; i < text.size();) {
         const int cp = utf8_to_codepoint(text, i);
         const size_t char_len = utf8_char_length(text[i]);
@@ -227,12 +234,16 @@ FORCE_INLINE bool is_chinese_char(const int &cp) {
             continue;
         }
         if (!is_whitespace_cp(cp)) {
-            output.append(text.substr(i, char_len));
+            std::copy_n(text.begin() + i, char_len, output.begin() + output_index);
+            output_index += char_len;
+            //output.append(text.substr(i, char_len));
         } else {
-            output += ' ';
+            //output.append(space);
+            output_index++;
         }
         i += char_len;
     }
+    output.resize(output_index);
     return output;
 }
 
@@ -242,6 +253,7 @@ FORCE_INLINE bool is_chinese_char(const int &cp) {
     pool.release();
     std::pmr::string output{&pool};
     output.reserve(1024);
+    static const std::string space = " ";
     for (size_t i = 0; i < text.size();) {
         int cp = utf8_to_codepoint(text, i);
         const size_t char_len = utf8_char_length(text[i]);
@@ -250,11 +262,11 @@ FORCE_INLINE bool is_chinese_char(const int &cp) {
             continue;
         }
         if (is_whitespace_cp(cp)) {
-            output += ' ';
+            output.append(space);
         } else if (is_chinese_char(cp)) {
-            output += ' ';
+            output.append(space);
             output.append(text, i, char_len);
-            output += ' ';
+            output.append(space);
         } else {
             output.append(text, i, char_len);
         }
@@ -334,8 +346,7 @@ static void insertion_sort(std::vector<int> &vec) {
     int *arr = vec.data();
     int validEnd = 0;
     for (int i = 0; i < n; ++i) {
-        const int key = arr[i];
-        if (key >= 4) {
+        if (const int key = arr[i]; key >= 4) {
             int j = validEnd - 1;
             while (j >= 0 && arr[j] > key) {
                 arr[j + 1] = arr[j];

@@ -90,7 +90,6 @@ public:
         std::string PARALLEL_LIB;
     } env{};
 
-public:
     explicit FlashBertTokenizer(const std::string &vocab_file,
                                 const bool do_lower_case = true,
                                 const int model_max_length = -1,
@@ -117,17 +116,19 @@ public:
                                                          const int max_length,
                                                          const std::string &padding) const {
         const size_t allowed_length = max_length - 1;
-        std::vector<int> input_ids;
-        input_ids.reserve(1024);
+        thread_local std::vector<int> input_ids(1024);
+        input_ids.clear();
 
         input_ids.emplace_back(this->CLS_NUM);
-        const auto basic_tokens = basic.tokenize(text);
-        for (const auto &token: basic_tokens) {
-            if (wordpiece.tokenizer_ids(token, max_length - 1, input_ids) ==
-                allowed_length) {
-                break;
-            }
-        }
+
+        basic.tokenize_early_stop(text, wordpiece, max_length, input_ids, allowed_length);
+
+        // const auto basic_tokens = basic.tokenize(text);
+        // for (const auto &token: basic_tokens) {
+        //     if (wordpiece.tokenizer_ids(token, max_length - 1, input_ids) == allowed_length) {
+        //         break;
+        //     }
+        // }
         input_ids.emplace_back(this->SEP_NUM);
         if (padding == "max_length") {
             input_ids.resize(max_length, 0);

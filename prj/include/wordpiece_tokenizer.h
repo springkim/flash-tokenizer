@@ -77,26 +77,26 @@ public:
     virtual int tokenizer_ids(const std::string &token, const int max_length, std::vector<int> &input_ids) const {
         if (token.size() > static_cast<size_t>(max_length) && input_ids.size() < max_length) {
             input_ids.emplace_back(this->UNK_NUM);
-            return input_ids.size();
+            return static_cast<int>(input_ids.size());
         }
         const size_t original_size = input_ids.size();
-        size_t start = 0;
+        int start = 0;
         while (start < token.size()) {
             const auto &trie = (start != 0 ? this->suffixTrie : this->initialTrie);
-            auto [match_length, match_idx] = trie.search(token, start);
-            if (match_idx == -1) {
+            std::pair<int, int> match = trie.search(token, start);
+            if (match.second == -1) {
                 input_ids.resize(original_size);
                 if (input_ids.size() < max_length)
                     input_ids.emplace_back(this->UNK_NUM);
-                return input_ids.size();
+                return static_cast<int>(input_ids.size());
             }
             if (input_ids.size() < max_length) {
-                input_ids.emplace_back(match_idx);
+                input_ids.emplace_back(match.second);
             } else
-                return input_ids.size();
-            start += match_length;
+                return static_cast<int>(input_ids.size());
+            start += match.first;
         }
-        return input_ids.size();
+        return static_cast<int>(input_ids.size());
     }
 };
 

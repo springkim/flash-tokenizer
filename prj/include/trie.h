@@ -44,32 +44,31 @@
 #include <array>
 #include <string>
 #include <queue>
-#include <bitset>
 
-class Trie;
+class ACTrie;
 
 class TrieNode {
-    std::array<int, 256> children;
-    std::bitset<256> explicitChild;
+    std::array<int, 256> children{};
+    std::array<bool, 256> explicitChild{};
     int vocab_index = -1;
     int fail = 0;
 
 public:
     TrieNode() {
         children.fill(-1);
-        explicitChild.reset();
+        explicitChild.fill(false);
     }
 
-    friend class Trie;
+    friend class ACTrie;
 };
 
-class Trie {
+class ACTrie {
     std::vector<TrieNode> pool;
     std::vector<int> dfa; // DFA(Deterministic Finite Automaton)
     std::vector<bool> isExplicit;
 
 public:
-    Trie() {
+    ACTrie() {
         pool.emplace_back();
     }
 
@@ -77,8 +76,8 @@ public:
         int current = 0;
         for (const unsigned char c: word) {
             if (pool[current].children[c] == -1) {
-                pool[current].children[c] = pool.size();
-                pool[current].explicitChild.set(c);
+                pool[current].children[c] = static_cast<int>(pool.size());
+                pool[current].explicitChild[c] = true;
                 pool.emplace_back();
             }
             current = pool[current].children[c];
@@ -94,7 +93,7 @@ public:
                 q.push(pool[0].children[c]);
             } else {
                 pool[0].children[c] = 0;
-                pool[0].explicitChild.reset(c);
+                pool[0].explicitChild[c] = false;
             }
         }
         while (!q.empty()) {
@@ -102,7 +101,7 @@ public:
             q.pop();
             const int f = pool[cur].fail;
             for (int c = 0; c < 256; ++c) {
-                if (pool[cur].children[c] != -1 && pool[cur].explicitChild.test(c)) {
+                if (pool[cur].children[c] != -1 && pool[cur].explicitChild[c]) {
                     int child = pool[cur].children[c];
                     pool[child].fail = pool[f].children[c];
                     q.push(child);
@@ -116,19 +115,21 @@ public:
         for (size_t state = 0; state < pool.size(); state++) {
             for (int c = 0; c < 256; c++) {
                 dfa[state * 256 + c] = pool[state].children[c];
-                isExplicit[state * 256 + c] = pool[state].explicitChild.test(c);
+                isExplicit[state * 256 + c] = pool[state].explicitChild[c];
             }
         }
     }
 
-    [[nodiscard]] std::pair<size_t, int> search(const std::string &token, const size_t start) const {
+    [[nodiscard]] std::pair<int, int> search(const std::string &token, const int start) const {
         int current = 0;
-        size_t best_length = 0;
+        int best_length = 0;
         int best_index = -1;
-        for (size_t pos = start; pos < token.size(); pos++) {
+        const int size = static_cast<int>(token.size());
+        for (int pos = start; pos < size; ++pos) {
             const unsigned char c = token[pos];
-            const int next = dfa[current * 256 + c];
-            if (!isExplicit[current * 256 + c])
+            const int index = current * 256 + c;
+            const int next = dfa[index];
+            if (!isExplicit[index])
                 break;
             current = next;
             if (pool[current].vocab_index != -1) {
@@ -141,98 +142,6 @@ public:
 };
 
 
-// #include <vector>
-// #include <array>
-// #include <string>
-// #include <queue>
-// #include <bitset>
-// class Trie;
-//
-//
-// class TrieNode {
-//     std::array<int, 256> children{};
-//
-//     std::array<bool, 256> explicitChild{}; // std::bitset<256> explicitChild{}; 으로 바꿔줘
-//     int vocab_index = -1;
-//     int fail = 0;
-//
-// public:
-//     TrieNode() {
-//         children.fill(-1);
-//         explicitChild.fill(false);
-//     }
-//
-//     friend Trie;
-// };
-//
-//
-// class Trie {
-//     std::vector<TrieNode> pool{};
-//
-// public:
-//     Trie() {
-//         pool.emplace_back();
-//     }
-//
-//     FORCE_INLINE void insert(const std::string &word, const int index) {
-//         int current = 0;
-//         for (const unsigned char c: word) {
-//             if (pool[current].children[c] == -1) {
-//                 pool[current].children[c] = static_cast<int>(this->pool.size());
-//                 pool[current].explicitChild[c] = true;
-//                 pool.emplace_back();
-//             }
-//             current = pool[current].children[c];
-//         }
-//         pool[current].vocab_index = index;
-//     }
-//
-//     FORCE_INLINE void build() {
-//         std::queue<int> q;
-//         for (int c = 0; c < 256; ++c) {
-//             if (int child = this->pool[0].children[c]; child != -1) {
-//                 this->pool[child].fail = 0;
-//                 q.push(child);
-//             } else {
-//                 this->pool[0].children[c] = 0;
-//                 this->pool[0].explicitChild[c] = false;
-//             }
-//         }
-//         while (!q.empty()) {
-//             const int cur = q.front();
-//             q.pop();
-//             const int f = this->pool[cur].fail;
-//             for (int c = 0; c < 256; ++c) {
-//                 if (int child = this->pool[cur].children[c]; child != -1 && pool[cur].explicitChild[c]) {
-//                     this->pool[child].fail = this->pool[f].children[c];
-//                     q.push(child);
-//                 } else {
-//                     this->pool[cur].children[c] = this->pool[f].children[c];
-//                 }
-//             }
-//         }
-//     }
-//
-//
-//     [[nodiscard]] std::pair<size_t, int> search(const std::string &token, const size_t start) const {
-//         int current = 0;
-//         size_t best_length = 0;
-//         int best_index = -1;
-//
-//         for (size_t pos = start; pos < token.size(); ++pos) {
-//             if (const unsigned char c = token[pos]; this->pool[current].explicitChild[c]) {
-//                 current = this->pool[current].children[c];
-//                 if (this->pool[current].vocab_index != -1) {
-//                     best_length = pos - start + 1;
-//                     best_index = this->pool[current].vocab_index;
-//                 }
-//             } else {
-//                 break;
-//             }
-//         }
-//         return {best_length, best_index};
-//     }
-// };
-
+using Trie = ACTrie;
 
 #endif

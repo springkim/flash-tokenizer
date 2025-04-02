@@ -149,8 +149,8 @@ public:
 
 
 void perf_test(bool parallel = false) {
-    const auto CONFIG = Data().config.bert_base_multilingual_cased;
-    const auto DATASET = Data().dataset.texts_multilingual;
+    const auto CONFIG = Data().config.bert_base_cased;
+    const auto DATASET = Data().dataset.texts_en;
     cout << "Load dataset..." << endl;
     cout << "\t" << CONFIG << endl;
     cout << "\t" << DATASET << endl;
@@ -170,10 +170,10 @@ void perf_test(bool parallel = false) {
     if (parallel) {
         ids_list = td.tokenizer->batch_encode(td.texts, "longest", td.model_max_length, parallel);
     } else {
-        ids_list.reserve(td.texts.size());
+        ids_list.assign(td.texts.size(), std::vector<int>());
         for (size_t i = 0; i < td.texts.size(); i++) {
             auto ids = td.tokenizer->encode(td.texts[i], "longest", td.model_max_length);
-            ids_list.emplace_back(ids);
+            ids_list[i] = ids;
         }
     }
     const auto t_end = std::chrono::system_clock::now();
@@ -201,9 +201,8 @@ void perf_test(bool parallel = false) {
 int main() {
     std::ios::sync_with_stdio(false);
 
-
     cout << cpp_env() << endl;
-    perf_test(true);
+    perf_test(false);
 
     //cout << g_1 << "\t" << g_2 << "\t" << g_3 << "\t" << g_4 << endl;
     return 0;

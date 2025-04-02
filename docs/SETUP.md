@@ -46,3 +46,13 @@ Install Visual Studio 2022 from https://visualstudio.microsoft.com/ko/vs/communi
 ```bash
 sudo apt install gcc g++ make cmake -y
 ```
+
+# 03. IDE
+
+[CLion](https://www.jetbrains.com/clion/)
+
+# 04. C++
+
+* Compatible with C++17.
+* Supports building on Linux, Windows, and macOS.
+* Buildable with G++, Clang++, and MSVC compilers.

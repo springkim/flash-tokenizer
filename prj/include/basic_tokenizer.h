@@ -38,6 +38,7 @@
 #define A509LU8VZQRP3PNW02Q5UH286VBZ13PY7GBV9F767ALLP3P9P50WVH7NZL7B3YS6
 #include <memory_resource>
 #include "functions.h"
+#include "wordpiece_tokenizer.h"
 
 using SplitFunction = void (*)(std::string_view, std::vector<std::string> &);
 using CleanFunction = std::pmr::string (*)(const std::string &);
@@ -54,16 +55,33 @@ public:
     }
 
     [[nodiscard]] std::vector<std::string> tokenize(const std::string &text) const {
+        const SplitFunction split_func = this->split_function[this->do_lower_case];
         const std::pmr::string &tokenized = this->clean_function[this->tokenize_chinese_chars](text);
         const std::pmr::vector<std::pmr::string> &orig_tokens = whitespace_tokenize(tokenized);
 
-        std::vector<std::string> output_tokens;
-        output_tokens.reserve(1024);
-
+        thread_local std::vector<std::string> output_tokens(1024);
+        output_tokens.clear();
         for (const auto &token: orig_tokens) {
-            this->split_function[this->do_lower_case](token, output_tokens);
+            split_func(token, output_tokens);
         }
         return output_tokens;
+    }
+
+    void tokenize_early_stop(const std::string &text, const WordpieceTokenizer &wordpiece, const int max_length, std::vector<int> &input_ids, const size_t allowed_length) const {
+        const SplitFunction split_func = this->split_function[this->do_lower_case];
+        const std::pmr::string &tokenized = this->clean_function[this->tokenize_chinese_chars](text);
+        const std::pmr::vector<std::pmr::string> &orig_tokens = whitespace_tokenize(tokenized);
+
+        thread_local std::vector<std::string> output_tokens(1024);
+        for (const auto &token: orig_tokens) {
+            output_tokens.clear();
+            split_func(token, output_tokens);
+            for (const auto &_token: output_tokens) {
+                if (wordpiece.tokenizer_ids(_token, max_length - 1, input_ids) == allowed_length) {
+                    break;
+                }
+            }
+        }
     }
 };
 

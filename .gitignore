@@ -38,9 +38,12 @@ dist/
 build/
 src/flash_tokenizer.egg-info/
 secret.txt
-perftest/
 *.7z
 __pycache__/
 *.pyc
 *.parquet
 log.csv
+error_notebook.txt
+perftest_history.md
+perftest/other/
+extract.py

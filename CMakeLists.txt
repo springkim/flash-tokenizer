@@ -14,6 +14,8 @@ find_package(OpenMP)
 
 set(SRC_FILES prj/src/bert_tokenizer.cpp)
 find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+find_package(Python COMPONENTS Interpreter Development REQUIRED)
+
 message(STATUS "Python Interpreter: ${Python3_EXECUTABLE}")
 message(STATUS "Python Include Dir: ${Python3_INCLUDE_DIRS}")
 message(STATUS "Python Library: ${Python3_LIBRARIES}")
@@ -28,7 +30,8 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     add_definitions(-DDO_FORCE_INLINE)
     set(COMPILE_OPTIONS -O3 -flto -funroll-loops -ffast-math
             -fomit-frame-pointer -fvectorize -fslp-vectorize -fno-finite-math-only
-            -fstrict-aliasing -finline-functions)
+            -fstrict-aliasing -finline-functions
+            -march=native -mtune=native)
 elseif (MSVC)
     set(COMPILE_OPTIONS /O2 /W1 /GL /Ot /Ob3 /fp:fast /arch:AVX2 /Zc:__cplusplus /EHsc- /GR-)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
