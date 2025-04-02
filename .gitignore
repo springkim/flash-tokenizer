@@ -47,4 +47,5 @@ error_notebook.txt
 perftest_history.md
 perftest/other/
 perftest/test.py
+perftest/.*/
 extract.py

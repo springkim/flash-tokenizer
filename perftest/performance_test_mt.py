@@ -1,3 +1,6 @@
+import logging
+
+logging.disable(logging.WARNING)
 import time
 from tqdm import tqdm
 
@@ -6,11 +9,12 @@ from tabulate import tabulate
 from bert_tokenizer import *
 import pandas as pd
 from typing import List, Tuple, Dict, Callable, Any, Union
-import logging
+
 import threading
 import time
 from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, TimeRemainingColumn
 import queue
+import argparse
 
 
 # logging.disable(logging.INFO)
@@ -65,9 +69,19 @@ def single_encode_performance_test(progress, task_id, tokenizer: Any, texts: Lis
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='BertTokenizer performance test', add_help=False)
 
-    config_path = "../dataset/config/" + Config.bert_base_chinese
-    dataset_path = "../dataset/data/" + Data.texts_cn_all
+    parser.add_argument('-c', '--config', type=str, default=Config.bert_base_cased, required=True)
+    parser.add_argument('-d', '--dataset', type=str, default=Data.texts_en_all, required=True)
+    parser.add_argument('-s', '--size', type=int, default=100000, required=False)
+    args = parser.parse_args()
+
+    # config_path = "../dataset/config/" + Config.bert_base_multilingual_cased
+    # dataset_path = "../dataset/data/" + Data.texts_multilingual_all
+
+    config_path = "../dataset/config/" + args.config
+    dataset_path = "../dataset/data/" + args.dataset
+    size = args.size
 
     logging.info("Initializing tokenizer...")
     tokenizer1 = HuggingFaceBertTokenizerFast(config_path)
@@ -87,7 +101,7 @@ if __name__ == '__main__':
     tokenizers.append(tokenizer5)
 
     logging.info("Loading data...")
-    texts, gts = load_parquet(dataset_path, os.path.basename(config_path), count=100000)
+    texts, gts = load_parquet(dataset_path, os.path.basename(config_path), count=size)
 
     logging.info("Performance comparisons are conducted using the following tokenizers:")
     for tokenizer in tokenizers:
@@ -113,6 +127,7 @@ if __name__ == '__main__':
             task_ids.append(task_id)
             t = threading.Thread(target=single_encode_performance_test, args=(progress, task_id, task[1], task[2], task[3], result_queue))
             threads.append(t)
+        print(f'{os.path.basename(config_path)}, texts: {len(texts)}({os.path.basename(dataset_path).split('.')[0]})')
 
         for t in threads:
             t.start()
@@ -123,9 +138,7 @@ if __name__ == '__main__':
     colalign = ("left", "right", "right", "right")
 
     tables = result_queue
-    # tables.sort(key=lambda x: float(x[1][:-1]))
-
-    s = f'{os.path.basename(config_path)} ({os.path.basename(dataset_path)})\n'
-    s += tabulate(tables, headers=headers, tablefmt="simple_grid", colalign=colalign)
+    tables.sort(key=lambda x: float(x[1][:-1]))
+    s = tabulate(tables, headers=headers, tablefmt="rounded_outline", colalign=colalign)
 
     print(s)

@@ -9,6 +9,7 @@ from enum import Enum
 from typing import List, Tuple, Dict, Callable, Any, Union
 import subprocess
 import logging
+import argparse
 
 logging.disable(logging.INFO)
 
@@ -45,10 +46,10 @@ def load_parquet(file_path: str, config: str, ratio: Union[float, None] = None, 
     return texts[:size], gts[:size]
 
 
-def single_encode_performance_test(tokenizer: Any, texts: List[str], gts: List[List[int]], show_tqdm: bool = True):
+def single_encode_performance_test(tokenizer: Any, texts: List[str], gts: List[List[int]], show_tqdm: bool = True, bar_color: str = 'white'):
     t_beg = time.time()
     correct = 0
-    with tqdm(total=len(texts), desc=f"{tokenizer.name:<{35}}", disable=not show_tqdm, ncols=100) as pbar:
+    with tqdm(total=len(texts), desc=f"{tokenizer.name:<{35}}", disable=not show_tqdm, ncols=100, colour=bar_color) as pbar:
         for text, gt in zip(texts, gts):
             input_ids = tokenizer(text, padding="longest")
             correct += gt == input_ids
@@ -61,11 +62,36 @@ def single_encode_performance_test(tokenizer: Any, texts: List[str], gts: List[L
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='BertTokenizer performance test', add_help=False)
 
-    config_path = "../dataset/config/" + Config.bert_base_chinese
-    dataset_path = "../dataset/data/" + Data.texts_cn_all
+    parser.add_argument('-c', '--config', type=str, default=Config.bert_base_cased, required=True)
+    parser.add_argument('-d', '--dataset', type=str, default=Data.texts_en_all, required=True)
+    parser.add_argument('-s', '--size', type=int, default=100000, required=False)
+    args = parser.parse_args()
 
-    print("Initializing tokenizer...")
+    # config_path = "../dataset/config/" + Config.bert_base_multilingual_cased
+    # dataset_path = "../dataset/data/" + Data.texts_multilingual_all
+
+    config_path = "../dataset/config/" + args.config
+    dataset_path = "../dataset/data/" + args.dataset
+    size = args.size
+    if 'en' in dataset_path:
+        color = 'green'
+        mark = '🟩'
+    elif 'cn' in dataset_path:
+        color = 'red'
+        mark = '🟥'
+    elif 'ko' in dataset_path:
+        color = 'blue'
+        mark = '🟦'
+    elif 'multilingual' in dataset_path:
+        color = 'yellow'
+        mark = '🟨'
+
+    # config_path = "../dataset/config/" + Config.bert_base_chinese
+    # dataset_path = "../dataset/data/" + Data.texts_cn_all
+
+    logging.info("Initializing tokenizer...")
     tokenizer1 = HuggingFaceBertTokenizerFast(config_path)
     tokenizer2 = PaddleNLPBertTokenizerFast(config_path)
     tokenizers = [tokenizer1, tokenizer2]
@@ -77,22 +103,23 @@ if __name__ == '__main__':
         tokenizer4 = BlingfireBertTokenizer(config_path, pair_int=pair_int, unk=bf_unk)
         tokenizers.append(tokenizer4)
     tokenizer5 = FlashBertTokenizer(config_path)
-    tokenizers.append(tokenizer5)
 
     tokenizer6 = RustBertTokenizer(config_path)
     tokenizers.append(tokenizer6)
+    tokenizers.append(tokenizer5)
 
     logging.info("Loading data...")
-    texts, gts = load_parquet(dataset_path, os.path.basename(config_path))
+    texts, gts = load_parquet(dataset_path, os.path.basename(config_path), count=size)
 
     logging.info("Performance comparisons are conducted using the following tokenizers:")
     for tokenizer in tokenizers:
         logging.info(f'\t{tokenizer.name}')
     logging.info('-' * 30)
 
+    print(f'{mark} {os.path.basename(config_path)}, texts: {len(texts)}({os.path.basename(dataset_path).split('.')[0]})')
     tables = []
     for tokenizer in tokenizers:
-        r = single_encode_performance_test(tokenizer, texts, gts)
+        r = single_encode_performance_test(tokenizer, texts, gts, bar_color=color)
         tables.append(r)
 
     headers = ["Tokenizer", "Elapsed Time", "texts", "Accuracy"]
@@ -100,11 +127,12 @@ if __name__ == '__main__':
 
     tables.sort(key=lambda x: float(x[1][:-1]))
 
-    s = f'### {os.path.basename(config_path)} ({os.path.basename(dataset_path)})\n'
+    s = ''
+    # s = f'### {os.path.basename(config_path)} ({os.path.basename(dataset_path)})\n'
     s += tabulate(tables, headers=headers, tablefmt="github", colalign=colalign)
-    s += '\n\n'
+    # s += '\n\n'
 
     print(s)
 
-    with open("perftest_history.md", "at", encoding="utf-8") as f:
-        f.write(s)
+    # with open("perftest_history.md", "at", encoding="utf-8") as f:
+    #     f.write(s)

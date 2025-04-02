@@ -22,7 +22,7 @@ class BlingfireBertTokenizer:
 
     @property
     def name(self):
-        return "Blingfire"
+        return "Blingfire(Microsoft)"
 
     def __call__(self, text: str, max_length=-1, padding="max_length"):
         if max_length == -1:
